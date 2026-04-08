@@ -164,7 +164,7 @@ export default function LPPage() {
           <a href="#revenue">収益</a>
           <a href="#phases">フェーズ</a>
         </div>
-        <a href="/login" className="nav-cta">早期アクセス登録</a>
+        <a href="/login" className="nav-cta">無料で参加する</a>
       </nav>
 
       {/* ヒーロー */}
@@ -182,10 +182,10 @@ export default function LPPage() {
           <p className="hero-sub">
             作曲家・作詞家・ミュージシャン・一般人。<br/>
             誰でも種を蒔ける。市場が才能を選ぶ。<br/>
-            YouTubeがバズった瞬間、全員に収益が届く。
+            ウタタネで生まれた作品が外へ広がり、関わった全員に収益が届く。
           </p>
           <div className="hero-actions">
-            <a href="#cta" className="btn-primary">早期アクセス登録</a>
+            <a href="#cta" className="btn-primary">無料で参加する</a>
             <a href="#solution" className="btn-ghost">仕組みを見る</a>
           </div>
         </div>
@@ -331,8 +331,7 @@ export default function LPPage() {
           </div>
           <p className="revenue-note lp-reveal">
             シンガーソングライターが作曲・作詞・演奏の3役を担う場合、<strong style={{ color: 'var(--forest)' }}>合計70%</strong>を受け取ります。
-            視聴者への5%キャッシュバックは「購入者が広める」インセンティブになります。
-            サブスク（¥480〜/月）・1曲購入（¥300〜）・TYPを贈るの3つの収益ルートがあります。
+            無料で聴くだけでも、動画広告収益の一部がクリエイターと自分自身に還ってくる。もっと深く応援したければ、サブスクや1曲購入でさらにクリエイターを直接支援できる。
           </p>
         </div>
       </section>
