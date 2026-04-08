@@ -5,3 +5,4 @@ node_modules/
 !.env.example
 desktop.ini
 *.log
+package-lock.json
