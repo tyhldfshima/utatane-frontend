@@ -2,13 +2,10 @@
   "framework": "nextjs",
   "buildCommand": "npm run build",
   "outputDirectory": ".next",
-  "env": {
-    "NEXT_PUBLIC_API_URL": "@utatane_api_url"
-  },
   "rewrites": [
     {
       "source": "/api/:path*",
-      "destination": "https://api.utatane.music/api/:path*"
+      "destination": "https://web-production-c9b1.up.railway.app/api/:path*"
     }
   ],
   "headers": [
