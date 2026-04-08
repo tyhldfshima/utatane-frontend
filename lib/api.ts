@@ -1,9 +1,9 @@
-// lib/api.ts — ウタタネ API クライアント
-// バックエンド (utatane-backend) の全エンドポイントに対応
+﻿// lib/api.ts 窶・繧ｦ繧ｿ繧ｿ繝・API 繧ｯ繝ｩ繧､繧｢繝ｳ繝・
+// 繝舌ャ繧ｯ繧ｨ繝ｳ繝・(utatane-backend) 縺ｮ蜈ｨ繧ｨ繝ｳ繝峨・繧､繝ｳ繝医↓蟇ｾ蠢・
 
 const BASE = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001'
 
-// ── エラー型 ──────────────────────────────────────────────────
+// 笏笏 繧ｨ繝ｩ繝ｼ蝙・笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏
 
 export class ApiError extends Error {
   constructor(public status: number, public code: string) {
@@ -11,7 +11,7 @@ export class ApiError extends Error {
   }
 }
 
-// ── リクエスト共通処理 ────────────────────────────────────────
+// 笏笏 繝ｪ繧ｯ繧ｨ繧ｹ繝亥・騾壼・逅・笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏
 
 async function req<T>(path: string, init: RequestInit = {}): Promise<T> {
   const token = typeof window !== 'undefined'
@@ -64,7 +64,7 @@ const patch = <T>(path: string, body?: unknown) =>
 const del = <T>(path: string) =>
   req<T>(path, { method: 'DELETE' })
 
-// ── 型定義 ────────────────────────────────────────────────────
+// 笏笏 蝙句ｮ夂ｾｩ 笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏
 
 export type UserRole = 'viewer' | 'composer' | 'lyricist' | 'musician'
 export type WorkType = 'melody' | 'lyrics'
@@ -153,10 +153,10 @@ export interface VersionContributorInput {
   user_id: string; role: 'composer' | 'lyricist' | 'musician'; share_pct: number
 }
 
-// ── API メソッド ──────────────────────────────────────────────
+// 笏笏 API 繝｡繧ｽ繝・ラ 笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏
 
 export const api = {
-  // 認証
+  // 隱崎ｨｼ
   register: (name: string, email: string, password: string) =>
     post<{ access_token: string; refresh_token: string; user: User }>(
       '/api/v1/auth/register', { name, email, password }),
@@ -165,7 +165,7 @@ export const api = {
       '/api/v1/auth/login', { email, password }),
   logout: () => post<{ ok: boolean }>('/api/v1/auth/logout'),
 
-  // ユーザー
+  // 繝ｦ繝ｼ繧ｶ繝ｼ
   getMe: () => req<User>('/api/v1/users/me'),
   updateMe: (data: { name?: string; bio?: string; scout_dm_enabled?: boolean }) =>
     put<User>('/api/v1/users/me', data),
@@ -177,7 +177,7 @@ export const api = {
   follow: (id: string) => post<{ ok: boolean }>(`/api/v1/users/${id}/follow`),
   unfollow: (id: string) => del<{ ok: boolean }>(`/api/v1/users/${id}/follow`),
 
-  // 作品
+  // 菴懷刀
   getWorks: (p?: { type?: WorkType; reuse_mode?: ReuseMode; limit?: number; offset?: number }) => {
     const q = new URLSearchParams(p as Record<string, string>).toString()
     return req<{ works: Work[] }>(`/api/v1/works${q ? `?${q}` : ''}`)
@@ -191,8 +191,8 @@ export const api = {
   setReuseMode: (id: string, reuse_mode: ReuseMode) =>
     patch<{ id: string; reuse_mode: ReuseMode }>(`/api/v1/works/${id}/reuse`, { reuse_mode }),
 
-  // バージョン
-  getVersions: (p?: { limit?: number; offset?: number }) => {
+  // 繝舌・繧ｸ繝ｧ繝ｳ
+  getVersions: (p?: { limit?: number; offset?: number; type?: string; sort?: string; page?: string }) => {
     const q = new URLSearchParams(p as Record<string, string>).toString()
     return req<{ versions: Version[] }>(`/api/v1/versions${q ? `?${q}` : ''}`)
   },
@@ -206,13 +206,13 @@ export const api = {
   recordPlay: (versionId: string) =>
     post<{ ok: boolean }>(`/api/v1/versions/${versionId}/play`),
 
-  // トランザクション
+  // 繝医Λ繝ｳ繧ｶ繧ｯ繧ｷ繝ｧ繝ｳ
   purchase: (version_id: string, payment_method: 'stripe' | 'typ', ref?: string) =>
     post<{ ok: boolean }>('/api/v1/transactions/purchase', { version_id, payment_method, ref }),
   tip: (version_id: string, amount: number, message?: string) =>
     post<{ ok: boolean }>('/api/v1/transactions/tip', { version_id, amount, message }),
 
-  // ウォレット
+  // 繧ｦ繧ｩ繝ｬ繝・ヨ
   getWallet: () => req<Wallet>('/api/v1/wallet'),
   getWalletHistory: (p?: { limit?: number; offset?: number }) => {
     const q = new URLSearchParams(p as Record<string, string>).toString()
@@ -226,7 +226,7 @@ export const api = {
   donateTYP: (amount: number, cause?: string) =>
     post<{ ok: boolean }>('/api/v1/wallet/donate', { amount, cause }),
 
-  // 通知
+  // 騾夂衍
   getNotifications: (p?: { limit?: number; offset?: number }) => {
     const q = new URLSearchParams(p as Record<string, string>).toString()
     return req<{ notifications: Notification[]; unread_count: number }>(
@@ -237,3 +237,4 @@ export const api = {
   readAllNotifications: () =>
     post<{ ok: boolean }>('/api/v1/notifications/read-all'),
 }
+
