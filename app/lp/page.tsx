@@ -22,15 +22,24 @@ function LogoSVG({ size = 32 }: { size?: number }) {
 
 function HeroMark() {
   return (
-    <svg viewBox="0 0 80 80" fill="none" width={80} height={80}>
-      <ellipse cx="40" cy="62" rx="14" ry="10" fill="#2D5A45" opacity=".7"/>
-      <path d="M40 50 Q40 28 40 16" stroke="#5DA67E" strokeWidth="2.5" strokeLinecap="round"/>
-      <path d="M40 36 Q30 30 24 34 Q30 41 40 36Z" fill="#5DA67E" opacity=".8"/>
-      <path d="M40 27 Q50 21 56 25 Q50 32 40 27Z" fill="#5DA67E" opacity=".6"/>
-      <circle cx="18" cy="20" r="2.5" fill="#E8A83E" opacity=".5"/>
-      <circle cx="62" cy="16" r="2" fill="#E8A83E" opacity=".4"/>
-      <circle cx="68" cy="36" r="2.5" fill="#E8A83E" opacity=".3"/>
-      <circle cx="12" cy="44" r="2" fill="#5DA67E" opacity=".3"/>
+    <svg viewBox="0 0 120 120" fill="none" width={120} height={120}>
+      {/* 土（種床） */}
+      <ellipse cx="60" cy="98" rx="22" ry="12" fill="#2D5A45" opacity=".7"/>
+      {/* 種 */}
+      <ellipse cx="60" cy="92" rx="6" ry="8" fill="#C47B2B" opacity=".6"/>
+      {/* 茎 */}
+      <path d="M60 85 Q60 50 60 24" stroke="#5DA67E" strokeWidth="3" strokeLinecap="round"/>
+      {/* 左の葉 */}
+      <path d="M60 55 Q45 45 36 50 Q45 60 60 55Z" fill="#5DA67E" opacity=".85"/>
+      {/* 右の葉 */}
+      <path d="M60 38 Q75 28 84 34 Q75 44 60 38Z" fill="#5DA67E" opacity=".7"/>
+      {/* 先端の新芽 */}
+      <path d="M60 24 Q55 18 58 12 Q60 16 62 12 Q65 18 60 24Z" fill="#E8A83E" opacity=".8"/>
+      {/* 飾り粒子 */}
+      <circle cx="24" cy="28" r="3" fill="#E8A83E" opacity=".45"/>
+      <circle cx="96" cy="22" r="2.5" fill="#E8A83E" opacity=".35"/>
+      <circle cx="102" cy="52" r="3" fill="#5DA67E" opacity=".25"/>
+      <circle cx="18" cy="64" r="2.5" fill="#5DA67E" opacity=".25"/>
     </svg>
   )
 }
@@ -110,7 +119,7 @@ const PHASES = [
   {
     num: 'PHASE 03', tag: 'FUTURE', tagClass: 'tag-future',
     title: 'NFTと Web3 統合',
-    items: ['ハッシュチェーンDB → IPFS','Layer2（Polygon）NFTミント','NFT転売ロイヤリティ自動分配','バージョンNFT（EIP-2981）','グローバル展開（多言語対応）','utatane.music ドメイン稼働'],
+    items: ['ハッシュチェーンDB → IPFS','Layer2（Polygon）NFTミント','NFT転売ロイヤリティ自動分配','バージョンNFT（EIP-2981）','グローバル展開（多言語対応）'],
   },
 ]
 
@@ -155,7 +164,7 @@ export default function LPPage() {
           <a href="#revenue">収益</a>
           <a href="#phases">フェーズ</a>
         </div>
-        <a href="#cta" className="nav-cta">早期アクセス登録</a>
+        <a href="/login" className="nav-cta">早期アクセス登録</a>
       </nav>
 
       {/* ヒーロー */}
@@ -273,7 +282,7 @@ export default function LPPage() {
       <section id="personas" className="lp-personas">
         <div className="lp-container">
           <span className="section-label lp-reveal">— FOR EVERYONE</span>
-          <h2 className="section-title lp-reveal">全員に、人生が変わる入口がある。</h2>
+          <h2 className="section-title lp-reveal">全員が、種を持っている。</h2>
           <div className="personas-grid">
             {PERSONAS.map((p) => (
               <div key={p.role} className="persona-card lp-reveal">
@@ -390,6 +399,9 @@ export default function LPPage() {
               {submitted ? '登録完了 ✓' : '登録する'}
             </button>
           </form>
+          <p className="lp-reveal" style={{ marginTop: '1.5rem', fontSize: '.85rem', color: 'rgba(247,242,232,.4)', position: 'relative', zIndex: 1 }}>
+            すでにアカウントをお持ちの方は<a href="/login" style={{ color: 'var(--gold)', textDecoration: 'underline' }}>ログイン</a>
+          </p>
           <div className="cta-domain lp-reveal">
             <strong>utatane.music</strong> — 一粒の歌が、森になる。
           </div>
