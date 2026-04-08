@@ -24,20 +24,26 @@ export default function FeedPage() {
 
   return (
     <main className="max-w-2xl mx-auto px-4 py-6 pb-32">
+      {/* ヘッダー */}
+      <div className="mb-6">
+        <h1 className="text-xl font-bold text-forest">ウタタネ</h1>
+        <p className="text-sm text-moss mt-1">一粒の歌が、森になる。</p>
+      </div>
+
       {/* フィルター */}
       <div className="flex gap-2 overflow-x-auto pb-2 mb-6 no-scrollbar">
         {FILTERS.map((f) => (
           <button key={f.value} onClick={() => setFilter(f.value)}
-            className={`flex-shrink-0 px-4 py-1.5 rounded-full text-sm font-medium transition-colors ${
+            className={`flex-shrink-0 px-4 py-1.5 rounded-md text-sm font-medium transition-colors ${
               filter === f.value
-                ? 'bg-purple-100 text-purple-800'
-                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                ? 'bg-forest text-cream'
+                : 'bg-paper text-ink/60 hover:bg-paper/80'
             }`}>
             {f.label}
           </button>
         ))}
         <select value={sort} onChange={(e) => setSort(e.target.value)}
-          className="ml-auto flex-shrink-0 px-3 py-1.5 rounded-full text-sm border border-gray-200 outline-none bg-white text-gray-600">
+          className="ml-auto flex-shrink-0 px-3 py-1.5 rounded-md text-sm border border-sprout/30 outline-none bg-paper text-ink/70">
           <option value="latest">新着順</option>
           <option value="popular">人気順</option>
         </select>
@@ -47,7 +53,7 @@ export default function FeedPage() {
       {isLoading ? (
         <div className="space-y-4">
           {[...Array(3)].map((_, i) => (
-            <div key={i} className="animate-pulse bg-gray-100 rounded-2xl h-56" />
+            <div key={i} className="animate-pulse bg-paper rounded-lg h-56" />
           ))}
         </div>
       ) : (

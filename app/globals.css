@@ -4,9 +4,18 @@
 
 @layer base {
   :root {
-    --color-primary: #534AB7;
+    --color-forest: #1B3A2D;
+    --color-moss:   #2D5A45;
+    --color-sprout: #5DA67E;
+    --color-amber:  #C47B2B;
+    --color-gold:   #E8A83E;
+    --color-cream:  #F7F2E8;
+    --color-paper:  #FBF8F2;
+    --color-ink:    #1A1612;
   }
   body {
+    background-color: var(--color-cream);
+    color: var(--color-ink);
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
