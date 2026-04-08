@@ -76,7 +76,7 @@ export function VersionCard({ version, onPurchased }: Props) {
 
         {/* バージョン番号 */}
         <span className="absolute top-3 right-3 text-xs bg-white/80 text-purple-700 px-2.5 py-1 rounded-full font-medium">
-          {version.stats.purchase_count} 人購入
+          {version.stats?.purchase_count ?? 0} 人購入
         </span>
       </div>
 

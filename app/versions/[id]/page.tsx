@@ -38,7 +38,7 @@ export default function VersionPage() {
       {/* タイトル */}
       <h1 className="text-xl font-medium text-gray-900 mb-1">{version.title}</h1>
       <p className="text-sm text-gray-400 mb-6">
-        {version.play_count.toLocaleString()} 再生 · {version.stats.purchase_count} 購入 · {version.stats.tip_count} 投げ銭
+        {version.play_count.toLocaleString()} 再生 · {version.stats?.purchase_count ?? 0} 購入 · {version.stats?.tip_count ?? 0} 投げ銭
       </p>
 
       {/* プレイヤーエリア */}
@@ -67,7 +67,7 @@ export default function VersionPage() {
                 {Math.round(c.share_pct * 100)}%
               </p>
               <p className="text-xs text-gray-400">
-                {Math.round(version.stats.total_revenue_typ * c.share_pct).toLocaleString()} TYP
+                {Math.round((version.stats?.total_revenue_typ ?? 0) * c.share_pct).toLocaleString()} TYP
               </p>
             </div>
           </div>
