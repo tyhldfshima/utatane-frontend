@@ -332,7 +332,7 @@ export default function LPPage() {
       <section id="typ" className="lp-typ">
         <div className="lp-container">
           <span className="section-label lp-reveal">— THANK YOU POINT</span>
-          <h2 className="section-title lp-reveal">ありがとうが、経済になる。</h2>
+          <h2 className="section-title lp-reveal">あなたの感謝が、クリエイターの糧になる。</h2>
           <div className="typ-grid">
             {TYP_CARDS.map((c) => (
               <div key={c.title} className="typ-card lp-reveal">
