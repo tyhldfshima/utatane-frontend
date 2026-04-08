@@ -18,14 +18,14 @@ export function TYPWallet() {
   const [message, setMessage] = useState('')
 
   const sendMut = useMutation({
-    mutationFn: () => api.sendTYP(toUserId, amount, message, 'sendable'),
+    mutationFn: () => api.sendTYP(toUserId, amount, message),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['wallet'] }); setMode(null) },
   })
 
   const redeemMut = useMutation({
-    mutationFn: () => api.redeemTYP(amount, 'bank-account-id'),
+    mutationFn: () => api.redeemTYP(amount, { bank_name: '', branch_name: '', account_type: 'ordinary', account_number: '', account_name: '' }),
     onSuccess: (data) => {
-      alert(`¥${data.jpy_amount.toLocaleString()} を ${data.scheduled_transfer} に振り込みます`)
+      alert(`振込予定: ${data.scheduled_at} / 受取額: ${data.net_amount}`)
       qc.invalidateQueries({ queryKey: ['wallet'] }); setMode(null)
     },
   })
@@ -55,13 +55,6 @@ export function TYPWallet() {
           <p className="text-xs text-purple-600 mt-1">他者への感謝に使えます</p>
         </div>
       </div>
-
-      {/* 保留中 */}
-      {wallet.pending_distributions > 0 && (
-        <p className="text-xs text-gray-400 mb-4">
-          + {wallet.pending_distributions.toLocaleString()} TYP 処理中（まもなく反映）
-        </p>
-      )}
 
       {/* アクションボタン */}
       <div className="grid grid-cols-3 gap-2 mb-4">
@@ -117,7 +110,7 @@ export function TYPWallet() {
 
       {/* 生涯獲得 */}
       <p className="text-xs text-gray-400 text-right mt-3">
-        生涯獲得: {wallet.lifetime_earned.toLocaleString()} TYP
+
       </p>
     </div>
   )

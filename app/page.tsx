@@ -52,7 +52,7 @@ export default function FeedPage() {
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          {data?.works.map((v) => (
+          {data?.versions.map((v) => (
             <VersionCard key={v.id} version={v} onPurchased={() => refetch()} />
           ))}
         </div>

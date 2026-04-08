@@ -39,7 +39,7 @@ export function VersionCard({ version, onPurchased }: Props) {
     try {
       const ref = new URLSearchParams(window.location.search).get('ref') ?? undefined
       const result = await api.purchase(version.id, 'stripe', ref)
-      alert(`購入完了！${result.typ_cashback} TYP がウォレットに戻ってきました`)
+      alert('購入完了！')
       onPurchased?.()
     } catch (e: unknown) {
       if (e instanceof Error) alert(e.message)

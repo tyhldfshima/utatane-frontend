@@ -214,7 +214,7 @@ export const api = {
 
   // 繧ｦ繧ｩ繝ｬ繝・ヨ
   getWallet: () => req<Wallet>('/api/v1/wallet'),
-  getWalletHistory: (p?: { limit?: number; offset?: number }) => {
+  getWalletHistory: (p?: { limit?: number; offset?: number; action?: string }) => {
     const q = new URLSearchParams(p as Record<string, string>).toString()
     return req<{ history: WalletHistoryItem[] }>(`/api/v1/wallet/history${q ? `?${q}` : ''}`)
   },

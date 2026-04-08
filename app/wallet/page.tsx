@@ -3,7 +3,7 @@
 
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { api, WalletHistory } from '@/lib/api'
+import { api, WalletHistoryItem } from '@/lib/api'
 import { useAuthStore } from '@/stores/authStore'
 import { useRouter } from 'next/navigation'
 
@@ -89,7 +89,7 @@ function SendPanel({ sendableBalance, onDone }: { sendableBalance: number; onDon
   const [from, setFrom]       = useState<'sendable' | 'convertible'>('sendable')
 
   const mut = useMutation({
-    mutationFn: () => api.sendTYP(toUserId, amount, message, from),
+    mutationFn: () => api.sendTYP(toUserId, amount, message),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['wallet'] })
       qc.invalidateQueries({ queryKey: ['wallet-history'] })
@@ -160,9 +160,9 @@ function RedeemPanel({ convertible, onDone }: { convertible: number; onDone: () 
   const [amount, setAmount] = useState(1000)
 
   const mut = useMutation({
-    mutationFn: () => api.redeemTYP(amount, 'default-bank'),
+    mutationFn: () => api.redeemTYP(amount, { bank_name: '', branch_name: '', account_type: 'ordinary', account_number: '', account_name: '' }),
     onSuccess: (data) => {
-      alert(`¥${data.jpy_amount.toLocaleString()} を ${data.scheduled_transfer} に振り込みます`)
+      alert(`振込予定: ${data.scheduled_at} / 受取額: ${data.net_amount}`)
       qc.invalidateQueries({ queryKey: ['wallet'] })
       onDone()
     },
@@ -225,7 +225,7 @@ function DonatePanel({ convertible, onDone }: { convertible: number; onDone: () 
     mutationFn: () => api.donateTYP(amount, charityId),
     onSuccess: (data) => {
       const name = CHARITIES.find(c => c.id === charityId)?.name ?? ''
-      alert(`「${name}」へ ¥${data.jpy_donated.toLocaleString()} が届きます。ありがとうございます！`)
+      alert(`寄付が完了しました。ありがとうございます！`)
       qc.invalidateQueries({ queryKey: ['wallet'] })
       onDone()
     },
@@ -320,25 +320,25 @@ function HistoryList() {
             <div key={i} className="animate-pulse h-16 bg-gray-100 rounded-xl" />
           ))}
         </div>
-      ) : data?.transactions.length === 0 ? (
+      ) : data?.history.length === 0 ? (
         <p className="text-center text-gray-400 text-sm py-10">履歴はありません</p>
       ) : (
         <div className="space-y-2">
-          {data?.transactions.map((tx) => {
-            const info = ACTION_MAP[tx.type] ?? { label: tx.type, color: 'text-gray-600', sign: '' }
+          {data?.history.map((tx) => {
+            const info = ACTION_MAP[tx.direction] ?? { label: tx.direction, color: 'text-gray-600', sign: '' }
             return (
-              <div key={tx.id} className="flex items-center gap-3 px-4 py-3.5 bg-gray-50 rounded-xl">
+              <div key={tx.created_at + tx.amount} className="flex items-center gap-3 px-4 py-3.5 bg-gray-50 rounded-xl">
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-gray-900 truncate">
                     {info.label}
-                    {tx.role && <span className="text-xs text-gray-400 ml-1.5">({tx.role})</span>}
+                    
                   </p>
                   <p className="text-xs text-gray-400 mt-0.5">
                     {new Date(tx.created_at).toLocaleDateString('ja-JP')}
                   </p>
                 </div>
                 <p className={`text-sm font-medium flex-shrink-0 ${info.color}`}>
-                  {info.sign}{Math.abs(tx.typ_amount).toLocaleString()} TYP
+                  {info.sign}{Math.abs(tx.amount).toLocaleString()} TYP
                 </p>
               </div>
             )
@@ -382,16 +382,15 @@ export default function WalletPage() {
         </div>
       ) : (
         <>
-          <BalanceCard
+          <BalanceCard pending={0}
             convertible={wallet.convertible_balance}
             sendable={wallet.sendable_balance}
-            pending={wallet.pending_distributions}
           />
 
           {/* 生涯統計 */}
           <div className="grid grid-cols-3 gap-2 mb-6 mt-3">
             {[
-              { label: '生涯獲得', value: wallet.lifetime_earned },
+              { label: '生涯獲得', value: 0 },
             ].map(({ label, value }) => (
               <div key={label} className="col-span-3 text-right">
                 <span className="text-xs text-gray-400">{label}: </span>

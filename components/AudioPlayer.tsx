@@ -16,7 +16,7 @@ export function AudioPlayer() {
   // バージョン切替時にsrc変更・再生開始
   useEffect(() => {
     if (!audioRef.current || !currentVersion) return
-    audioRef.current.src = currentVersion.audio_url
+    audioRef.current.src = currentVersion.audio_url ?? ""
     audioRef.current.load()
     audioRef.current.play().catch(() => {})
     playStartRef.current = Date.now()
@@ -42,7 +42,7 @@ export function AudioPlayer() {
     const pct = audio.currentTime / audio.duration
     if (pct >= 0.8) {
       reportedRef.current = true
-      api.recordPlay(currentVersion.id, Math.floor(audio.currentTime)).catch(() => {})
+      api.recordPlay(currentVersion.id).catch(() => {})
     }
   }, [currentVersion?.id])
 
@@ -64,7 +64,7 @@ export function AudioPlayer() {
       <div className="flex-1 min-w-0">
         <p className="text-sm font-medium text-gray-900 truncate">{currentVersion.title}</p>
         <p className="text-xs text-gray-400 truncate">
-          {currentVersion.melody_work.creator.name} × {currentVersion.lyrics_work.creator.name}
+          {currentVersion.melody_work?.title ?? ""}
         </p>
       </div>
 
