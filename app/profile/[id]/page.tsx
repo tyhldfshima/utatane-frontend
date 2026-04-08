@@ -396,7 +396,7 @@ export default function ProfilePage() {
             <RevenueBanner works={worksData.works} />
           )}
           <div className="space-y-2">
-            {worksData?.works.length === 0 ? (
+            {worksData?.works?.length === 0 ? (
               <p className="text-center text-gray-400 text-sm py-10">作品はまだありません</p>
             ) : (
               worksData?.works.map((w) => <WorkCard key={w.id} work={w} isMine={isMine} />)
@@ -407,7 +407,7 @@ export default function ProfilePage() {
 
       {tab === 'performances' && (
         <div className="space-y-3">
-          {versionsData?.versions.length === 0 ? (
+          {versionsData?.versions?.length === 0 ? (
             <p className="text-center text-gray-400 text-sm py-10">演奏はまだありません</p>
           ) : (
             versionsData?.versions.map((v) => <PerformanceCard key={v.id} version={v} />)
