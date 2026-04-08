@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@300;400;600&family=Noto+Sans+JP:wght@300;400;500&family=DM+Serif+Display:ital@0;1&family=IBM+Plex+Mono:wght@300&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -12,6 +14,18 @@
     --color-cream:  #F7F2E8;
     --color-paper:  #FBF8F2;
     --color-ink:    #1A1612;
+    /* LP用CSS変数 */
+    --forest:  #1B3A2D;
+    --moss:    #2D5A45;
+    --leaf:    #3D7A5C;
+    --sprout:  #5DA67E;
+    --amber:   #C47B2B;
+    --gold:    #E8A83E;
+    --cream:   #F7F2E8;
+    --paper:   #FBF8F2;
+    --ink:     #1A1612;
+    --muted:   #6B6358;
+    --border:  rgba(45,60,45,.12);
   }
   body {
     background-color: var(--color-cream);
