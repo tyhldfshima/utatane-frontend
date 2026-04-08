@@ -87,8 +87,8 @@ export default function VersionPage() {
       {/* アクション */}
       <div className="grid grid-cols-2 gap-3 mb-4">
         <button onClick={async () => {
-          await api.purchase(id, 'stripe', ref)
-          alert('購入完了！')
+          const { url } = await api.stripeCheckout(id)
+          window.location.href = url
         }} className="py-3 rounded-2xl text-sm font-medium bg-purple-600 text-white hover:bg-purple-700">
           ¥{version.price.toLocaleString()} で購入
         </button>
@@ -143,7 +143,7 @@ export default function VersionPage() {
           versionId={id}
           versionTitle={version.title}
           audioUrl={version.audio_url ?? ''}
-          lyrics={version.lyrics_text}
+          lyrics={version.lyrics_text ?? undefined}
           onClose={() => setSingOpen(false)}
         />
       )}

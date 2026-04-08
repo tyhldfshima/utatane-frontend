@@ -209,6 +209,8 @@ export const api = {
   // 繝医Λ繝ｳ繧ｶ繧ｯ繧ｷ繝ｧ繝ｳ
   purchase: (version_id: string, payment_method: 'stripe' | 'typ', ref?: string) =>
     post<{ ok: boolean }>('/api/v1/transactions/purchase', { version_id, payment_method, ref }),
+  stripeCheckout: (version_id: string) =>
+    post<{ url: string }>('/api/v1/stripe/checkout', { version_id }),
   tip: (version_id: string, amount: number, message?: string) =>
     post<{ ok: boolean }>('/api/v1/transactions/tip', { version_id, amount, message }),
 

@@ -37,10 +37,8 @@ export function VersionCard({ version, onPurchased }: Props) {
     if (!user) { alert('ログインが必要です'); return }
     setLoading(true)
     try {
-      const ref = new URLSearchParams(window.location.search).get('ref') ?? undefined
-      const result = await api.purchase(version.id, 'stripe', ref)
-      alert('購入完了！')
-      onPurchased?.()
+      const { url } = await api.stripeCheckout(version.id)
+      window.location.href = url
     } catch (e: unknown) {
       if (e instanceof Error) alert(e.message)
     } finally { setLoading(false) }
