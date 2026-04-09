@@ -6,6 +6,11 @@ const nextConfig = {
   async redirects() {
     return [
       {
+        source: '/lp',
+        destination: '/',
+        permanent: true,
+      },
+      {
         source: '/LP',
         destination: '/',
         permanent: true,
