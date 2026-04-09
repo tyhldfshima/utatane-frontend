@@ -3,6 +3,20 @@ const nextConfig = {
   images: {
     domains: ['cdn.utatane.jp'],
   },
+  async redirects() {
+    return [
+      {
+        source: '/LP',
+        destination: '/',
+        permanent: true,
+      },
+      {
+        source: '/Lp',
+        destination: '/',
+        permanent: true,
+      },
+    ]
+  },
   async rewrites() {
     return [
       {
