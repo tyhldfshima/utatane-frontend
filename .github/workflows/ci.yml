@@ -5,6 +5,11 @@ on:
   push:
     branches: [main]
 
+# 読むだけ。packages: read は自社パッケージ（@tyhld/*）を GitHub Packages から取るために要る
+permissions:
+  contents: read
+  packages: read
+
 jobs:
   check:
     runs-on: ubuntu-latest
@@ -13,8 +18,17 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 24
-      # package-lock.json は .gitignore の対象（リポの既存の設定）なので npm ci は使えない
-      - run: npm install
+          cache: npm
+      # package-lock.json のとおりに入れる（D-6）
+      # @tyhld/* は GitHub Packages（restricted）。入館証は Secret の NPM_TOKEN（read:packages）。
+      # リポの GITHUB_TOKEN では取れない場合がある（建造くんで 403 を実測）。
+      # .npmrc の中身は職人が読まないので、@tyhld/auth の説明にある名前（GITHUB_TOKEN）と、
+      # ほかの製品で使っている名前（NPM_TOKEN・NODE_AUTH_TOKEN）の3つに同じ値を渡す。
+      - run: npm ci
+        env:
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN || secrets.GITHUB_TOKEN }}
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN || secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.NPM_TOKEN || secrets.GITHUB_TOKEN }}
       - run: npm run typecheck
       - run: npm run lint
       - run: npm test

@@ -6,8 +6,8 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { useAuthStore } from '@/stores/authStore'
 
 function AuthInitializer() {
-  const fetchMe = useAuthStore(s => s.fetchMe)
-  useEffect(() => { fetchMe() }, [])
+  const init = useAuthStore(s => s.init)
+  useEffect(() => init(), [init])
   return null
 }
 
