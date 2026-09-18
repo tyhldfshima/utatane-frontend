@@ -15,8 +15,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      # registry-url と scope を渡すと、setup-node が @tyhld を GitHub Packages から
-      # NODE_AUTH_TOKEN で取る設定を書く（リポの .npmrc の中身に頼らない）
+      # ■ 自社パッケージ（@tyhld/*）の取り寄せ＝TYHLD の標準（minoru・migakia・kenzokun と同じ）
+      #   入館証の名前は NPM_TOKEN。Secret が無ければ GitHub が配る GITHUB_TOKEN（上の packages: read）。
+      #   ★このリポの .npmrc には GitHub Packages の行が無い（ほかの製品の .npmrc にはある）。
+      #   そのため setup-node に registry-url と scope を渡して、同じ設定（@tyhld → GitHub Packages・
+      #   入館証は NODE_AUTH_TOKEN）を書かせる。入れる値は NPM_TOKEN と同じ。
       - uses: actions/setup-node@v4
         with:
           node-version: 24
@@ -24,15 +27,10 @@ jobs:
           registry-url: https://npm.pkg.github.com
           scope: '@tyhld'
       # package-lock.json のとおりに入れる（D-6）
-      # @tyhld/* は GitHub Packages（restricted）。入館証は Secret の NPM_TOKEN（read:packages）。
-      # リポの GITHUB_TOKEN では取れない場合がある（建造くんで 403 を実測）。
-      # .npmrc の中身は職人が読まないので、@tyhld/auth の説明にある名前（GITHUB_TOKEN）と、
-      # ほかの製品で使っている名前（NPM_TOKEN・NODE_AUTH_TOKEN）の3つに同じ値を渡す。
       - run: npm ci
         env:
           NPM_TOKEN: ${{ secrets.NPM_TOKEN || secrets.GITHUB_TOKEN }}
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN || secrets.GITHUB_TOKEN }}
-          GITHUB_TOKEN: ${{ secrets.NPM_TOKEN || secrets.GITHUB_TOKEN }}
       - run: npm run typecheck
       - run: npm run lint
       - run: npm test
