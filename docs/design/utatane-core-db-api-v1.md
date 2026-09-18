@@ -8,7 +8,7 @@
   - 中央の決まり：ADR-005（TY Auth DB の置き場・1プロダクト＝1DB）・ADR-025（パッケージ方式と API 方式）・`packages/auth`・`packages/storage` の package.json・`docs/05-projects/utatane.md`
   - 便の報告：ウォレット画面の体験設計（b09360de）・旧 Railway の /api 経路を外した便（6b518439）
 - 置き場に依存しない中核の決まりの実装：`lib/domain/`（試験つき）。TYP の中央とつなぐ所の形：`lib/integrations/typ.ts`
-- DDL 案（未適用）：`docs/db/utatane-core-v1.draft.sql`
+- DDL 案（未適用）：`db/migrations/0001_utatane_core_v1.sql`（確定版・旧 docs/db/utatane-core-v1.draft.sql）
 
 ## 0. えふさん確定（2026-09-19・原文のまま）
 
@@ -35,7 +35,7 @@
 - 別案と、推さない理由：
   - 中央 DB（tyhld-platform）に `utatane` スキーマを置く：ADR-005 §3.2「プロダクト固有データは格納しない」と食い違う。
   - 中央に UTATANE 用のサービス（Hono）を立てて中央 DB に置く：ADR-025 の「プロダクト固有の判断はプロダクトに残す」と食い違い、中央の窓口の障害が UTATANE の中核に波及する。
-- えふさんの手番（決まったら）：①Supabase プロジェクトを作る → ②`docs/db/utatane-core-v1.draft.sql` の「貼る先」を書き入れた版を職人が出し直す → ③えふさんが貼る（事前確認 → 適用 → 事後確認 → 貼る先の確認列）→ ④Vercel の utatane に接続の値を入れる（職人は値に触らない）。
+- えふさんの手番（決まったら）：①Supabase プロジェクトを作る → ②`db/migrations/0001_utatane_core_v1.sql`（確定版・旧 docs/db/utatane-core-v1.draft.sql） の「貼る先」を書き入れた版を職人が出し直す → ③えふさんが貼る（事前確認 → 適用 → 事後確認 → 貼る先の確認列）→ ④Vercel の utatane に接続の値を入れる（職人は値に触らない）。
 
 ### 1-2. サーバの形
 
@@ -47,7 +47,7 @@
 
 ## 2. データの形（表の一覧）
 
-DDL の全文は `docs/db/utatane-core-v1.draft.sql`（35 表）。★金額・分配率は入れない。
+DDL の全文は `db/migrations/0001_utatane_core_v1.sql`（確定版・旧 docs/db/utatane-core-v1.draft.sql）（35 表）。★金額・分配率は入れない。
 
 | まとまり | 表 | 中身・決まり |
 |---|---|---|
@@ -182,7 +182,7 @@ DDL 案は、使い捨ての手元の Postgres（PGlite・本番ではない）�
 
 ### 8-1. DDL 案の点検（2026-09-19）
 
-- `docs/db/utatane-core-v1.draft.sql` の 35 表を点検した。ポイント・残高・取引・報酬・台帳の表は**混ざっていない**（外した表は無し）。
+- `db/migrations/0001_utatane_core_v1.sql`（確定版・旧 docs/db/utatane-core-v1.draft.sql） の 35 表を点検した。ポイント・残高・取引・報酬・台帳の表は**混ざっていない**（外した表は無し）。
 - 中央を指すのは `rights_holders.central_beneficiary_id`（中央の受取人 id を参照として持つだけ）と、`revenue_rule_versions.revenue_kind` の値の名前（`typ_gift` など。収益の種類の名前で、残高ではない）だけ。
 - 素材のファイルは中央の保管サービスの file id を参照として持つだけ（`materials.storage_file_id`）。
 
@@ -230,10 +230,18 @@ DDL 案は、使い捨ての手元の Postgres（PGlite・本番ではない）�
 
 ## 10. DB ができた後の便で書き入れる所
 
-| 所 | 書き入れること |
-|---|---|
-| `docs/db/utatane-core-v1.draft.sql` の冒頭 | 貼る先の名前・ref・URL（未作成 → 実際の値） |
-| `lib/server/`（新しいファイル） | `CoreRepository` の Supabase 版（service role の鍵はサーバの環境変数から読む） |
-| `lib/server/container.ts` | `new MemoryRepository()` を Supabase 版に差し替える（1行） |
-| Vercel の環境変数（えふさん） | UTATANE DB の URL と service role の鍵（名前は Supabase 版を作る便で決める） |
-| `lib/integrations/typ.ts` の既定 | 中央の API の形が出たら、`BeneficiaryRegistry` と `TypCentralClient` の本物に差し替える |
+| 所 | 書き入れること | 状態（2026-09-19 DB 準備の便） |
+|---|---|---|
+| `db/migrations/0001_utatane_core_v1.sql` の冒頭 | 貼る先の名前・ref・URL | ★済み（utatane・ivnwrocykestkvemejwg・SQL Editor の URL）。2回流しても壊れない形に確定 |
+| `db/paste/01_precheck.sql`・`03_postcheck.sql` | えふさんが貼る事前確認・事後確認（期待値つき・末尾に貼る先の確認列） | ★済み。適用は `0001` の全文 |
+| `lib/server/pg-repository.ts`・`pg-client.ts` | `CoreRepository` の Postgres 版と、DB への接続 | ★済み。同じ試験を手元の保存と Postgres 版（PGlite）の両方で通した |
+| `lib/server/container.ts` | `new MemoryRepository()` を `new PgRepository(utataneSqlClientFromEnv())` に差し替える（1行） | 未（事後確認が通った後の切り替えの便） |
+| Vercel の環境変数（えふさん） | `UTATANE_DATABASE_URL`（Supabase の Transaction pooler の接続文字列） | 未（切り替えの便の前に） |
+| `lib/integrations/typ.ts` の既定 | 中央の API の形が出たら、`BeneficiaryRegistry` と `TypCentralClient` の本物に差し替える | 未 |
+
+### 10-1. つなぎ方の判断（DB 準備の便）
+
+- ★service role の鍵＋ Supabase の Data API（supabase-js）ではなく、**DB への直接の接続（`pg`・接続文字列 `UTATANE_DATABASE_URL`）**にした。
+- 理由1：Data API でスキーマ utatane を読むには、スキーマを API に出す設定が要る。出すと、ブラウザ用の鍵からも届く口が1つ増える。直接の接続なら、スキーマ utatane は API に出さないまま、ブラウザ用のロール（anon・authenticated）には何も配らない形を保てる。
+- 理由2：公開（再検証の記録・公開日時・公開状態の新版）のように、複数の表へまとめて書く所を、切り替えの便で1つのトランザクションにできる。
+- 接続文字列にはパスワードが入るので、service role の鍵と同じく秘密として扱う（サーバの環境変数だけ・画面に出さない）。
