@@ -15,10 +15,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      # registry-url と scope を渡すと、setup-node が @tyhld を GitHub Packages から
+      # NODE_AUTH_TOKEN で取る設定を書く（リポの .npmrc の中身に頼らない）
       - uses: actions/setup-node@v4
         with:
           node-version: 24
           cache: npm
+          registry-url: https://npm.pkg.github.com
+          scope: '@tyhld'
       # package-lock.json のとおりに入れる（D-6）
       # @tyhld/* は GitHub Packages（restricted）。入館証は Secret の NPM_TOKEN（read:packages）。
       # リポの GITHUB_TOKEN では取れない場合がある（建造くんで 403 を実測）。
