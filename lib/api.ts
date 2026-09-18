@@ -1,7 +1,14 @@
 ﻿// lib/api.ts 窶・繧ｦ繧ｿ繧ｿ繝・API 繧ｯ繝ｩ繧､繧｢繝ｳ繝・
 // 繝舌ャ繧ｯ繧ｨ繝ｳ繝・(utatane-backend) 縺ｮ蜈ｨ繧ｨ繝ｳ繝峨・繧､繝ｳ繝医↓蟇ｾ蠢・
 
-const BASE = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001'
+// API の接続先はここ1か所だけで決める（中央の API ができたら NEXT_PUBLIC_API_URL を付け替える）。
+// 未設定のときは既定の住所へ落とさず、呼ばずに api_url_not_configured で失敗させる。
+const BASE = process.env.NEXT_PUBLIC_API_URL ?? ''
+
+function apiUrl(path: string): string {
+  if (!BASE) throw new ApiError(0, 'api_url_not_configured')
+  return `${BASE}${path}`
+}
 
 // 笏笏 繧ｨ繝ｩ繝ｼ蝙・笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏
 
@@ -17,7 +24,7 @@ async function req<T>(path: string, init: RequestInit = {}): Promise<T> {
   const token = typeof window !== 'undefined'
     ? localStorage.getItem('access_token') : null
 
-  const res = await fetch(`${BASE}${path}`, {
+  const res = await fetch(apiUrl(path), {
     ...init,
     headers: {
       'Content-Type': 'application/json',
@@ -43,7 +50,7 @@ async function tryRefresh(): Promise<boolean> {
     ? localStorage.getItem('refresh_token') : null
   if (!refresh) return false
   try {
-    const res = await fetch(`${BASE}/api/v1/auth/refresh`, {
+    const res = await fetch(apiUrl('/api/v1/auth/refresh'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ refresh_token: refresh }),
