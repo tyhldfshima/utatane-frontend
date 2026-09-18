@@ -28,6 +28,8 @@
 
 ### 1-1. ★要判断 D-1（先頭）：新しい本番 DB が要る
 
+→ ★2026-09-19 えふさん承認：UTATANE 専用の Supabase（東京）を新設する。TYポイント中央基盤とは分離（8章）。DB ができるまでは、DB に依存しない所（API の口・画面・型・試験）を手元の保存で進める（9章）。
+
 - 旧ウタタネの Postgres（Railway）は削除済み。UTATANE 固有のデータの置き場は、いまどこにも無い。
 - 推し：**UTATANE 専用の Supabase プロジェクトを新しく作る**（名前 utatane・東京リージョン・プランは運用判断）。スキーマは `utatane`。行の単位の守り（RLS）を全部の表で有効にし、公開の鍵（anon・authenticated）には何も許さない。読み書きは UTATANE のサーバが service role の鍵で行う。
 - 別案と、推さない理由：
@@ -154,12 +156,84 @@ DDL 案は、使い捨ての手元の Postgres（PGlite・本番ではない）�
 
 ---
 
-## 7. 要判断
+## 7. 要判断（★2026-09-19 えふさん承認で決着）
 
-| 番号 | 問い |
+| 番号 | 問い | 答え（えふさん承認・CC1 の推しどおり） |
+|---|---|---|
+| D-1 | UTATANE 専用の DB を作るか | 作る。UTATANE 専用の Supabase（東京）を新設（作るのはえふさん）。TYポイント中央基盤とは分離 |
+| D-2 | 権利者と中央の受取人を結ぶ時点 | 初めて貢献を作ったとき（`CoreService.createContribution` で `BeneficiaryRegistry.ensureBeneficiary` を呼ぶ） |
+| D-3 | 分配の写しの渡し方 | 贈与の時点で UTATANE が中央へ渡す |
+| D-4 | 自前の認証を外す時期 | 本体②（この便）で外した。@tyhld/auth に切り替え |
+| D-5 | 許諾ルール R2 | 決まるまで版1＝undecided（安全側） |
+| D-6 | package-lock.json | 記録に入れる。CI は npm ci |
+
+---
+
+## 8. ★責務分離（えふさん確定 2026-09-19）
+
+> UTATANE DB → 曲、Version、Contribution、許諾、参加者など音楽データ
+> point.ty-hld.com 中央基盤 → ポイント台帳、残高、取引、由来、reversal、報酬など
+
+| 置き場 | 持つもの | 持たないもの |
+|---|---|---|
+| UTATANE DB（専用 Supabase・東京） | 役割（種類の表）・権利者（アカウントとは別）・アカウント状態と権利状態の履歴・プロフィールの上書き値・フォロー・Version・公開状態の履歴・貢献・作者・貢献の由来（Version Graph）・再利用ポリシー・共作の承認方式と委任・素材の結び（file id）と出どころ・Version の中身・参加者と参加の履歴・許諾ルール・申請と返事・募集・個別の許諾（Permission/Consent）・公開時の再検証・Revenue Rule の版と承認（Rule 本体は UT：③ §1 #5）・再生 | ポイント台帳・残高・取引・贈与・ロット・reversal（打ち消し）・算定・円建て報酬・出金・受取人の本体・税務と本人確認 |
+| point.ty-hld.com（中央） | ポイント台帳・残高・取引（付与・贈る・受け取る・打ち消し・失効）・取引の由来（origin）・reversal・冪等・算定・報酬・受取人（beneficiary）の本体 | 音楽データ（Version・貢献・許諾・参加者） |
+| つなぎ目 | UTATANE は中央の id だけを参照として持つ（`rights_holders.central_beneficiary_id`）。中央は UTATANE の Version の写し（`DistributionSnapshot`）を贈与の時点で受け取る（D-3） | 相手の DB を直接読まない |
+
+### 8-1. DDL 案の点検（2026-09-19）
+
+- `docs/db/utatane-core-v1.draft.sql` の 35 表を点検した。ポイント・残高・取引・報酬・台帳の表は**混ざっていない**（外した表は無し）。
+- 中央を指すのは `rights_holders.central_beneficiary_id`（中央の受取人 id を参照として持つだけ）と、`revenue_rule_versions.revenue_kind` の値の名前（`typ_gift` など。収益の種類の名前で、残高ではない）だけ。
+- 素材のファイルは中央の保管サービスの file id を参照として持つだけ（`materials.storage_file_id`）。
+
+---
+
+## 9. 本体②で作ったもの（DB に依存しない所）
+
+### 9-1. 保存の口（リポジトリの型）
+
+- `lib/server/repository.ts`：`CoreRepository`（音楽データの読み書きの口）。ポイント・残高・報酬の口は持たない。
+- `lib/server/memory-repository.ts`：試験用の手元の保存（メモリ）。★本番の保存ではない（プロセスが終われば消える）。
+- `lib/server/container.ts`：API の口が使う保存を決める**1か所**。DB ができたら、ここで Supabase 版の保存に差し替える。
+- `lib/server/core-service.ts`：`CoreService`＝保存の口から集めて lib/domain の決まりに渡し、結果を保存する。DB ができても変えない。
+
+### 9-2. API の口（Route Handlers・`app/api/v1`）
+
+| 口 | 本人確認 | 中身 |
+|---|---|---|
+| POST /versions | 要 | 下書き |
+| GET /versions/{id} | 任意（下書きは参加者だけ） | Version・参加者・使われた貢献・公開状態 |
+| POST /versions/{id}/contributions | 要（主催） | 新しい貢献（mode=create・由来つき可・一緒に作った人を招く）か既存の参照（mode=reference） |
+| POST /versions/{id}/materials | 要（主催） | 素材（出どころの申告が無ければ 422） |
+| POST /versions/{id}/participants | 要（招かれた人） | 参加の承認・辞退 |
+| POST /versions/{id}/publish | 要（主催） | 公開時の再検証 → 記録 → 公開。通らなければ 409 publish_check_failed と判定の中身 |
+| GET /versions/{id}/tree | 任意（下書きは参加者だけ） | 由来（世代ごと）と下流の1段（公開済みだけ） |
+| POST /versions/{id}/plays | 任意 | 再生（冪等の鍵） |
+| POST /contributions/{id}/policy | 要（作者） | 再利用ポリシーの新しい版 |
+| POST /permission-requests | 要 | 申請（冪等の鍵） |
+| POST /permission-requests/{id}/responses | 要（作者） | 承認なら Permission を記録（共作は1人ずつ・委任の代表者は delegated_approval） |
+| GET /profiles/{id}/channel | 任意（本人だけ自分の下書きも） | 自分の作品／参加作品／自分の貢献が使われた作品／コラボ募集中（公開済みだけ） |
+| GET /role-kinds | 不要 | 役割の一覧 |
+| GET /auth/callback | — | 中央ログインの戻り口（`@tyhld/auth/callback`） |
+
+- 本人確認：`lib/server/auth.ts`（`@tyhld/auth` の `authenticateBearer`・ES256＋JWKS）。設定が無ければ 503 auth_not_configured。
+- メンテナンス表示中は middleware が /api を 503 で返す（変えていない）。
+
+### 9-3. 画面
+
+- `/upload`：種を置く／ほかの歌から作る（使う貢献を選び、申請を送ってから公開を確かめる）。参加は Version の画面で承認する。
+- `/versions/{id}`：参加者と使われた貢献の2段・Version Tree（1段ずつ開く）・再生（画面を開いた1回を1つの鍵）・「この歌から作る」。「TYP を贈る」は中央の API が来るまで押せない（準備中）。金額・分配率は出さない。
+- `/profile/{id}`：チャンネルの4つの区分。
+- `/login`：Google（TY アカウント）だけ。メールとパスワードは外した（ADR-006）。
+
+---
+
+## 10. DB ができた後の便で書き入れる所
+
+| 所 | 書き入れること |
 |---|---|
-| D-1 | ★UTATANE 専用の DB（新しい Supabase プロジェクト utatane・東京）を作るか（1章） |
-| D-2 | 権利者と中央の受取人（beneficiary）を結ぶ時点：UTATANE で初めて貢献を作ったときに中央へ受取人を作るか、初めて TYP が届くときか |
-| D-3 | 分配の写しを、中央が算定のたびに UTATANE へ取りに来るか、贈与の時点で UTATANE が中央へ渡して中央が保存するか（推し：贈与の時点で渡す＝後から Version 側が変わっても算定がぶれない） |
-| D-4 | `@tyhld/auth` の導入に合わせて、いまの自前の認証（authStore・localStorage のトークン）を外す時期 |
-| D-5 | 許諾ルール R2 の値（追補3 AD-1）。決まるまで版1＝undecided で動かす |
+| `docs/db/utatane-core-v1.draft.sql` の冒頭 | 貼る先の名前・ref・URL（未作成 → 実際の値） |
+| `lib/server/`（新しいファイル） | `CoreRepository` の Supabase 版（service role の鍵はサーバの環境変数から読む） |
+| `lib/server/container.ts` | `new MemoryRepository()` を Supabase 版に差し替える（1行） |
+| Vercel の環境変数（えふさん） | UTATANE DB の URL と service role の鍵（名前は Supabase 版を作る便で決める） |
+| `lib/integrations/typ.ts` の既定 | 中央の API の形が出たら、`BeneficiaryRegistry` と `TypCentralClient` の本物に差し替える |

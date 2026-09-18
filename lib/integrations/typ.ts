@@ -44,6 +44,23 @@ export const typCentralNotConfigured: TypCentralClient = {
   },
 }
 
+// ── 権利者と中央の受取人を結ぶ（D-2：初めて貢献を作ったとき） ─────────────
+
+export interface BeneficiaryRegistry {
+  /**
+   * 中央に受取人を作る（または既にあれば同じ id を返す）。冪等。
+   * 中央につながらないときは null を返す＝「未連携」のまま貢献の作成は続ける（後で結び直す）。
+   */
+  ensureBeneficiary(args: { tyAccountId: Id; rightsHolderId: Id }): Promise<Id | null>
+}
+
+/** 中央の口が決まるまでの既定：いつも未連携（null）。貢献の作成は止めない */
+export const beneficiaryRegistryNotConfigured: BeneficiaryRegistry = {
+  async ensureBeneficiary() {
+    return null
+  },
+}
+
 // ── 中央 → UTATANE：分配の算定に使う写し ─────────────────────────
 
 export interface SnapshotHolder {
