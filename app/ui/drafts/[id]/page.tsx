@@ -1,8 +1,8 @@
 import React from 'react'
 import { notFound } from 'next/navigation'
-import { Icon, ScreenFrame, UnavailableButton } from '@/components/ui'
+import { GhostButton, Icon, ScreenFrame, UnavailableButton } from '@/components/ui'
 import s from '@/components/ui/shell.module.css'
-import { ADD_OPTIONS } from '@/lib/preview/model'
+import { ADD_OPTIONS, NEW_WITHOUT_INHERIT_HREF, inheritCandidates, joinRoleText, splitSelection } from '@/lib/preview/model'
 import { DRAFTS, findSong, hrefSong } from '@/lib/preview/sample'
 
 // W4 制作中の歌。
@@ -24,7 +24,13 @@ export default function DraftPage({ params, searchParams }: { params: { id: stri
         <span className={s.mark}>
           <Icon name="join" size="s" />
           {draft.hostName}さんの制作に参加中
-        </span>
+        </span>{' '}
+        {role ? (
+          <span className={s.mark} data-part="join-role">
+            <Icon name="join" size="s" />
+            {joinRoleText(role.roleLabel)}
+          </span>
+        ) : null}
         <h2 className={s.section}>あなたが送った物</h2>
         {role ? (
           <div className={s.row}>
@@ -48,9 +54,25 @@ export default function DraftPage({ params, searchParams }: { params: { id: stri
 function GrownDraft({ searchParams }: { searchParams: Search }) {
   const from = findSong(searchParams.from ?? '')
   if (!from) notFound()
-  const take = (searchParams.take ?? '').split(',').filter(Boolean)
-  const asked = (searchParams.ask ?? '').split(',').filter(Boolean)
+  // 住所に書かれた物でも、元の歌に実在し選べる物だけを数える（利用できませんは捨てる）
+  const cands = inheritCandidates(from)
+  const take = splitSelection(cands, (searchParams.take ?? '').split(',')).free.map((c) => c.id)
+  const asked = splitSelection(cands, (searchParams.ask ?? '').split(',')).needsApproval.map((c) => c.id)
   const add = ADD_OPTIONS.find((o) => o.id === searchParams.add)
+  // ★受け継ぐ物が0件なら Version の派生ではない（えふさん確定）。下書きを作らず、新規作成へ案内する。
+  if (take.length + asked.length === 0) {
+    return (
+      <ScreenFrame
+        back={{ href: `${hrefSong(from.id)}/grow`, label: '何を受け継ぐかへ戻る' }}
+        title="受け継ぐ物が選ばれていません"
+        secondary={<GhostButton label="何も受け継がず、新しくつくる" icon="plus" href={NEW_WITHOUT_INHERIT_HREF} />}
+      >
+        <div data-screen="draft-grown-none">
+          <p>新しい Version として育てるには、元の歌から1つ以上受け継ぎます。何も受け継がないときは、新しい歌としてつくります。</p>
+        </div>
+      </ScreenFrame>
+    )
+  }
   const nameOf = (id: string) => {
     const c = from.contributions.find((x) => x.id === id)
     return c ? `${c.holders.map((h) => `${h.displayName}さん`).join('・')}の${c.assetLabel}` : null

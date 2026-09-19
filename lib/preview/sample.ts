@@ -118,12 +118,10 @@ export const SONGS: Record<string, SongView> = {
     published: true,
     about: '歌詞だけの種です。',
     contributions: [c('c4-lyrics', 'lyrics', '歌詞', '歌詞', [HINATA], 'free')],
+    // 募集が1つの歌（何で参加するかの選択を省く見本）
     recruitment: {
       hostName: 'ひなた',
-      roles: [
-        { roleKindId: 'melody', roleLabel: '作曲' },
-        { roleKindId: 'vocal', roleLabel: 'ボーカル' },
-      ],
+      roles: [{ roleKindId: 'melody', roleLabel: '作曲' }],
     },
     gift: { ...noGiftIssue, receivableCount: 1 },
     children: [],
@@ -144,7 +142,19 @@ export const DRAFTS = {
     hostName: 'あさひ',
     parentSongId: 'minato',
   },
+  'yoake-join': {
+    id: 'yoake-join',
+    title: '夜明けのうた',
+    titleNote: '元の題名から始まります。主催が変えることがあります。',
+    hostName: 'ひなた',
+    parentSongId: 'yoake',
+  },
 } as const
+
+/** 参加した先の制作中の歌（公開された歌への参加は、その歌を元にした新しい制作に入る＝U3） */
+export function joinDraftFor(songId: string) {
+  return Object.values(DRAFTS).find((d) => d.parentSongId === songId) ?? null
+}
 
 /** 対応待ち（公開する前の確認のお願い） */
 export const CONSENTS = {

@@ -95,6 +95,25 @@ export function recruitmentText(r: RecruitmentView | null): string | null {
   return r.roles.map((x) => x.roleLabel).join('・')
 }
 
+/**
+ * 何で参加するか（えふさん確定 2026-09-19）。
+ * 募集の役割が1つなら、選ぶ操作を省いてその役割を自動で選ぶ（autoSelected）。複数なら、選んだ役割だけを受け付ける。
+ * ★省くのは選ぶ操作だけ。どの画面でも「〇〇で参加」と役割は出す。
+ */
+export function resolveJoinRole(
+  r: RecruitmentView | null,
+  requestedRoleKindId: string | undefined,
+): { role: RecruitmentView['roles'][number]; autoSelected: boolean } | null {
+  if (!r || r.roles.length === 0) return null
+  if (r.roles.length === 1) return { role: r.roles[0], autoSelected: true }
+  const role = r.roles.find((x) => x.roleKindId === requestedRoleKindId)
+  return role ? { role, autoSelected: false } : null
+}
+
+export function joinRoleText(roleLabel: string): string {
+  return `${roleLabel}で参加`
+}
+
 // ── 新しい Version として育てる：何を受け継ぐか ──────────────────
 
 export const REUSE_LABEL: Record<ReuseMode, string> = {
@@ -126,6 +145,17 @@ export function inheritCandidates(song: SongView): InheritCandidate[] {
       statusLabel: REUSE_LABEL[c.reuseMode],
       selectable: c.reuseMode !== 'forbidden',
     }))
+}
+
+/**
+ * 受け継ぐ物は最低1つ（えふさん確定 2026-09-19）。0件なら Version の派生ではないので、次へ進めない。
+ * 0件のときは「何も受け継がず、新しくつくる」で ＋つくる の新規作成へ送る（元の歌との親子を作らない）。
+ */
+export const MIN_INHERIT = 1
+export const NEW_WITHOUT_INHERIT_HREF = '/ui/create'
+
+export function canProceedInherit(selectableSelectedCount: number): boolean {
+  return selectableSelectedCount >= MIN_INHERIT
 }
 
 /** 選んだ物を「そのまま使える物」と「承認が必要な物」に分ける。利用できない物は選ばれても捨てる。 */
