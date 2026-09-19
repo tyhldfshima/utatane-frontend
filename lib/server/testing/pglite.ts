@@ -22,6 +22,17 @@ export async function freshUtataneDb(): Promise<{ pg: PGlite; client: SqlClient;
       const r = await pg.query(text, params)
       return { rows: r.rows as R[] }
     },
+    // まとめて書く口：PGlite の transaction（失敗したら rollback）
+    async transaction<T>(fn: (tx: SqlClient) => Promise<T>): Promise<T> {
+      return pg.transaction((tx) =>
+        fn({
+          async query<R>(text: string, params?: unknown[]) {
+            const r = await tx.query(text, params)
+            return { rows: r.rows as R[] }
+          },
+        }),
+      )
+    },
   }
   return { pg, client, migrate }
 }

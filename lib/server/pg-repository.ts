@@ -3,7 +3,7 @@
 // ・表は db/migrations/0001_utatane_core_v1.sql（スキーマ utatane）。
 // ・つなぎ方は SqlClient（query だけ）。本番は pg の Pool（lib/server/pg-client.ts）、試験は PGlite。
 // ・ポイント・残高・報酬は持たない。中央の受取人 id を参照として持つだけ。
-// ★container.ts はまだ MemoryRepository のまま。切り替えは事後確認が通った後の別の便。
+// ・API の口の保存先は、container.ts でこの Postgres 版に切り替えてある（UTATANE_DATABASE_URL が無いときは 503）。
 
 import type { Recruitment } from '../domain/permissions'
 import type { PublishCheck } from '../domain/publish'
@@ -36,6 +36,11 @@ import type {
 /** pg の Pool と PGlite のどちらでも満たせる最小の形 */
 export interface SqlClient {
   query<R = Record<string, unknown>>(text: string, params?: unknown[]): Promise<{ rows: R[] }>
+  /**
+   * まとめて書く口（1つの接続で begin → fn → commit、失敗したら rollback）。
+   * まとまりの中で渡される SqlClient には transaction が無い（入れ子は外側のまとまりに入る）。
+   */
+  transaction?<T>(fn: (tx: SqlClient) => Promise<T>): Promise<T>
 }
 
 type Row = Record<string, unknown>
@@ -47,6 +52,12 @@ const sOrNull = (v: unknown): string | null => (v === null || v === undefined ? 
 
 export class PgRepository implements CoreRepository {
   constructor(private db: SqlClient) {}
+
+  async transaction<T>(fn: (repo: CoreRepository) => Promise<T>): Promise<T> {
+    const db = this.db
+    if (!db.transaction) return fn(this) // すでにまとまりの中
+    return db.transaction((tx) => fn(new PgRepository(tx)))
+  }
 
   private async rows<R = Row>(text: string, params: unknown[] = []): Promise<R[]> {
     return (await this.db.query<R>(text, params)).rows

@@ -1,6 +1,7 @@
 // POST /api/v1/versions/{id}/plays — 再生を記録する（冪等の鍵つき・ログインしていなくてもよい）
 import { AuthFailure } from '@/lib/server/auth'
 import { getContainer } from '@/lib/server/container'
+import { CoreError } from '@/lib/server/core-service'
 import { json, str, withoutAuth } from '@/lib/server/http'
 
 export async function POST(request: Request, { params }: { params: { id: string } }) {
@@ -11,6 +12,7 @@ export async function POST(request: Request, { params }: { params: { id: string 
       tyAccountId = await getContainer().auth.verify(header)
     } catch (e) {
       if (e instanceof AuthFailure) return json({ error: e.code }, e.status)
+      if (e instanceof CoreError) return json({ error: e.code }, e.status) // DB の設定が無い＝503
       throw e
     }
   }

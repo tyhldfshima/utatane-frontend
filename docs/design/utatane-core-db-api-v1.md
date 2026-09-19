@@ -235,7 +235,7 @@ DDL 案は、使い捨ての手元の Postgres（PGlite・本番ではない）�
 | `db/migrations/0001_utatane_core_v1.sql` の冒頭 | 貼る先の名前・ref・URL | ★済み（utatane・ivnwrocykestkvemejwg・SQL Editor の URL）。2回流しても壊れない形に確定 |
 | `db/paste/01_precheck.sql`・`03_postcheck.sql` | えふさんが貼る事前確認・事後確認（期待値つき・末尾に貼る先の確認列） | ★済み。適用は `0001` の全文 |
 | `lib/server/pg-repository.ts`・`pg-client.ts` | `CoreRepository` の Postgres 版と、DB への接続 | ★済み。同じ試験を手元の保存と Postgres 版（PGlite）の両方で通した |
-| `lib/server/container.ts` | `new MemoryRepository()` を `new PgRepository(utataneSqlClientFromEnv())` に差し替える（1行） | 未（事後確認が通った後の切り替えの便） |
+| `lib/server/container.ts` | `new MemoryRepository()` を `new PgRepository(utataneSqlClientFromEnv())` に差し替える | ★作りと試験は済み（ブランチ feat/utatane-db-switch）。設定が無いときは 503 utatane_database_not_configured。複数の表へ書く所（公開・貢献の作成・素材の追加・許可の返事・下書きの作成）は1つのまとまり（transaction）で書く。合流は NPM_TOKEN の作り直しの後（#4 → #5 → この PR の順） |
 | Vercel の環境変数（えふさん） | `UTATANE_DATABASE_URL`（Supabase の Transaction pooler の接続文字列） | 未（切り替えの便の前に） |
 | `lib/integrations/typ.ts` の既定 | 中央の API の形が出たら、`BeneficiaryRegistry` と `TypCentralClient` の本物に差し替える | 未 |
 

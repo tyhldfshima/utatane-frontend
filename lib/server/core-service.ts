@@ -108,8 +108,10 @@ export class CoreService {
       contributions: [],
       materialIds: [],
     }
-    await this.repo.insertVersion(v)
-    await this.repo.upsertParticipantEvent(v.id, host.id, { state: 'accepted', at: v.createdAt, recordedBy: host.id })
+    await this.repo.transaction(async (repo) => {
+      await repo.insertVersion(v)
+      await repo.upsertParticipantEvent(v.id, host.id, { state: 'accepted', at: v.createdAt, recordedBy: host.id })
+    })
     return v
   }
 
@@ -161,14 +163,18 @@ export class CoreService {
       if (!check.ok) throw new CoreError(422, check.reason)
     }
 
-    await this.repo.insertContribution(c)
-    for (const d of args.derivedFrom ?? []) {
-      await this.repo.insertDerivation({ childId: c.id, parentId: d.parentId, kind: d.kind })
-    }
-    await this.repo.addVersionContribution(v.id, c.id, 'created')
-    for (const h of coHolders) {
-      await this.repo.upsertParticipantEvent(v.id, h.id, { state: 'invited', at: this.now(), recordedBy: host.id })
-    }
+    // 貢献・作者・由来・Version の中身・招待をまとめて書く（途中で失敗したら全部戻す）
+    await this.repo.transaction(async (repo) => {
+      await repo.insertContribution(c)
+      for (const d of args.derivedFrom ?? []) {
+        await repo.insertDerivation({ childId: c.id, parentId: d.parentId, kind: d.kind })
+      }
+      await repo.addVersionContribution(v.id, c.id, 'created')
+      for (const h of coHolders) {
+        await repo.upsertParticipantEvent(v.id, h.id, { state: 'invited', at: this.now(), recordedBy: host.id })
+      }
+    })
+    // 中央への受取人の結びは、DB のまとまりの外（中央の応答を DB の中で待たない）
     await this.linkBeneficiaryIfNeeded(host)
     return c
   }
@@ -200,8 +206,10 @@ export class CoreService {
       embodiedContributionIds: args.embodiedContributionIds,
       provenance: { ...args.provenance, declaredBy: host.id, declaredAt: this.now() },
     }
-    await this.repo.insertMaterial(m)
-    await this.repo.addVersionMaterial(v.id, m.id)
+    await this.repo.transaction(async (repo) => {
+      await repo.insertMaterial(m)
+      await repo.addVersionMaterial(v.id, m.id)
+    })
     return m
   }
 
@@ -279,25 +287,28 @@ export class CoreService {
     if (req.responses.some((r) => r.responderHolderId === me.id)) throw new CoreError(409, 'already_responded')
 
     const at = this.now()
-    await this.repo.addPermissionRequestResponse(req.id, { responderHolderId: me.id, answer: args.approve ? 'approved' : 'declined', at })
-    if (!args.approve) return null
+    // 返事の記録と、承認なら Permission の記録をまとめて書く（返事だけ残って許可が無い、を作らない）
+    return this.repo.transaction(async (repo) => {
+      await repo.addPermissionRequestResponse(req.id, { responderHolderId: me.id, answer: args.approve ? 'approved' : 'declined', at })
+      if (!args.approve) return null
 
-    const rule = await this.repo.currentPermissionRule()
-    const policies = await this.repo.listPolicies([c.id])
-    const current = policyFor(policies, c.id, me.id, at)
-    const p: Permission = {
-      id: this.newId(),
-      contributionId: c.id,
-      granteeHolderId: req.requesterHolderId,
-      draftVersionId: req.draftVersionId,
-      basis: isDelegate ? 'delegated_approval' : 'request_approval',
-      grantorHolderIds: [me.id],
-      policyVersionNoAtGrant: current ? current.versionNo : 0,
-      permissionRuleVersionAtGrant: rule.version,
-      events: [{ kind: 'granted', actorHolderId: me.id, at }],
-    }
-    await this.repo.insertPermission(p)
-    return p
+      const rule = await repo.currentPermissionRule()
+      const policies = await repo.listPolicies([c.id])
+      const current = policyFor(policies, c.id, me.id, at)
+      const p: Permission = {
+        id: this.newId(),
+        contributionId: c.id,
+        granteeHolderId: req.requesterHolderId,
+        draftVersionId: req.draftVersionId,
+        basis: isDelegate ? 'delegated_approval' : 'request_approval',
+        grantorHolderIds: [me.id],
+        policyVersionNoAtGrant: current ? current.versionNo : 0,
+        permissionRuleVersionAtGrant: rule.version,
+        events: [{ kind: 'granted', actorHolderId: me.id, at }],
+      }
+      await repo.insertPermission(p)
+      return p
+    })
   }
 
   // ── 公開（公開時の再検証 → 記録 → 公開） ─────────────────────
@@ -339,14 +350,17 @@ export class CoreService {
       ),
     )
 
-    await this.repo.insertPublishCheck({ id: this.newId(), ...check })
     const ok = check.passed && participationIssues.length === 0
-    if (ok) {
-      await this.repo.markPublished(v.id, at)
-      const history = await this.repo.listPublicationEvents(v.id)
-      const next = appendVersion<PublicationState>(history, { value: 'public', effectiveFrom: at, recordedBy: host.id, reason: '公開' })
-      await this.repo.appendPublicationEvent(v.id, next[next.length - 1])
-    }
+    // 再検証の記録・公開日時・公開状態の新版をまとめて書く（途中で失敗したら全部戻す＝記録だけ残って未公開、を作らない）
+    await this.repo.transaction(async (repo) => {
+      await repo.insertPublishCheck({ id: this.newId(), ...check })
+      if (ok) {
+        await repo.markPublished(v.id, at)
+        const history = await repo.listPublicationEvents(v.id)
+        const next = appendVersion<PublicationState>(history, { value: 'public', effectiveFrom: at, recordedBy: host.id, reason: '公開' })
+        await repo.appendPublicationEvent(v.id, next[next.length - 1])
+      }
+    })
     return { published: ok, check, participationIssues }
   }
 

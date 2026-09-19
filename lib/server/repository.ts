@@ -78,6 +78,12 @@ export interface ProfileRecord {
 }
 
 export interface CoreRepository {
+  /**
+   * まとめて書く口。fn の中の書き込みは、全部入るか全部戻るかのどちらか（途中で失敗したら全部戻す）。
+   * fn には、そのまとまりの中で使う保存の口が渡る。まとまりの中でさらに呼んでも、外側のまとまりに入る。
+   */
+  transaction<T>(fn: (repo: CoreRepository) => Promise<T>): Promise<T>
+
   // 役割
   listRoleKinds(): Promise<RoleKind[]>
 
