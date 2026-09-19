@@ -14,11 +14,13 @@ export type ActionProps = {
   /** 画面を移るときはリンク */
   href?: string
   onClick?: () => void
+  /** フォームを送るボタンにするとき、そのフォームの id */
+  submitsForm?: string
 }
 
 type Variant = 'primary' | 'secondary' | 'ghost'
 
-function ActionButton({ label, icon, href, onClick, variant }: ActionProps & { variant: Variant }) {
+function ActionButton({ label, icon, href, onClick, submitsForm, variant }: ActionProps & { variant: Variant }) {
   const cls = [styles.button, variant === 'primary' ? styles.primary : '', variant === 'ghost' ? styles.ghost : '']
     .filter(Boolean)
     .join(' ')
@@ -33,6 +35,13 @@ function ActionButton({ label, icon, href, onClick, variant }: ActionProps & { v
       <a className={cls} href={href} data-ui={variant}>
         {inner}
       </a>
+    )
+  }
+  if (submitsForm) {
+    return (
+      <button type="submit" form={submitsForm} className={cls} data-ui={variant}>
+        {inner}
+      </button>
     )
   }
   return (

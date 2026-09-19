@@ -11,6 +11,7 @@ import {
   GhostButton,
   Icon,
   ICON_NAMES,
+  InquiryButton,
   ScreenFrame,
   SecondaryButton,
   StateView,
@@ -84,7 +85,7 @@ export default function UiCatalogPage() {
             />
           </div>
           <div style={card}>
-            <SecondaryButton label="この曲に参加する" icon="join" />
+            <SecondaryButton label="参加する" icon="join" />
             <SecondaryButton label="新しい Version として育てる" icon="branch" />
             <GhostButton label="やめる" />
           </div>
@@ -127,6 +128,11 @@ export default function UiCatalogPage() {
               body={<p>公開すると、誰でも聴けるようになります。</p>}
               confirmLabel="公開する"
             />
+          </div>
+
+          <h2>取引についての問い合わせ（番号を見せずに引き継ぐ）</h2>
+          <div style={card}>
+            <InquiryButton transactionId="00000000-0000-4000-8000-000000000001" />
           </div>
 
           <h2>線のアイコン</h2>
