@@ -2,11 +2,13 @@ import React from 'react'
 import { notFound } from 'next/navigation'
 import { COPY, GhostButton, Icon, ScreenFrame, StateView } from '@/components/ui'
 import s from '@/components/ui/shell.module.css'
-import { ADD_OPTIONS, inheritCandidates, splitSelection } from '@/lib/preview/model'
+import { ADD_OPTIONS, NEW_WITHOUT_INHERIT_HREF, canProceedInherit, inheritCandidates, splitSelection } from '@/lib/preview/model'
 import { findSong, hrefSong } from '@/lib/preview/sample'
+import { InheritForm } from './InheritForm'
 
-// 新しい Version として育てる（えふさん確定 ④⑤⑥）。
+// 新しい Version として育てる（えふさん確定 ④⑤⑥・2026-09-19 追補）。
 // 1 何を受け継ぎますか（元の歌に実在する物だけ・自由に使えます／承認が必要／利用できません）
+//   ★最低1つ選ぶまで次へ進めない。0件は「何も受け継がず、新しくつくる」で ＋つくる の新規作成へ。
 //   →（承認が必要を選んだとき）使わせてとお願いする（★仮の形：申請の画面は次の便）
 // 2 今回あなたは何を加えますか（大きな区分だけ・あとから足せる）→ 制作中の歌（下書き）
 
@@ -20,8 +22,12 @@ export default function GrowPage({ params, searchParams }: { params: { id: strin
   const base = `${hrefSong(song.id)}/grow`
   const candidates = inheritCandidates(song)
   const picked = splitSelection(candidates, list(searchParams.take))
+  // お願い中の物（承認が必要）は「受け継ぐ物」に数える。住所に書かれていても、実在して承認が必要な物だけ。
+  const asked = splitSelection(candidates, list(searchParams.ask)).needsApproval
   const takeFree = picked.free.map((c) => c.id).join(',')
-  const takeAsk = picked.needsApproval.map((c) => c.id).join(',')
+  const takeAsk = [...picked.needsApproval, ...asked].map((c) => c.id).filter((v, i, a) => a.indexOf(v) === i).join(',')
+  const chosenCount = picked.free.length + picked.needsApproval.length + asked.length
+  const wantsNext = searchParams.step === 'next' || searchParams.step === 'add'
   const steps = (current: 1 | 2) => (
     <ol className={s.steps} aria-label="ステップ">
       <li aria-current={current === 1 ? 'step' : undefined}>1 何を受け継ぐか</li>
@@ -29,42 +35,53 @@ export default function GrowPage({ params, searchParams }: { params: { id: strin
     </ol>
   )
 
-  // 承認が必要な物を選んだとき：お願い（仮の形）
-  if (searchParams.step === 'next' && picked.needsApproval.length > 0) {
-    return (
-      <ScreenFrame
-        back={{ href: base, label: '選び直す' }}
-        title="使わせてとお願いする"
-        primary={{
-          kind: 'action',
-          label: 'お願いを送って続ける',
-          icon: 'hand',
-          href: `${base}?step=add&take=${encodeURIComponent(takeFree)}&ask=${encodeURIComponent(takeAsk)}`,
-        }}
-        secondary={<GhostButton label="お願いせずに続ける" href={`${base}?step=add&take=${encodeURIComponent(takeFree)}`} />}
-      >
-        <div data-screen="grow-ask" data-provisional="request">
-          <p className={s.card} role="note">
-            仮の形：お願い（申請）の画面は、UTATANE 本体のデータとつなぐ便で作ります。
-          </p>
-          <p>次の物は、作った人の承認が必要です。お願いを送り、返事が来たら使えます。</p>
-          <ul>
-            {picked.needsApproval.map((c) => (
-              <li key={c.id}>{c.label}</li>
-            ))}
-          </ul>
-        </div>
-      </ScreenFrame>
-    )
-  }
+  // ★0件では次へ進めない（住所で直接開いても、何を受け継ぐかへ戻す）
+  if (wantsNext && canProceedInherit(chosenCount)) {
+    // 承認が必要な物を選んだとき：お願い（仮の形）
+    if (searchParams.step === 'next' && picked.needsApproval.length > 0) {
+      const onlyApproval = picked.free.length === 0
+      return (
+        <ScreenFrame
+          back={{ href: base, label: '選び直す' }}
+          title="使わせてとお願いする"
+          primary={{
+            kind: 'action',
+            label: 'お願いを送って続ける',
+            icon: 'hand',
+            href: `${base}?step=add&take=${encodeURIComponent(takeFree)}&ask=${encodeURIComponent(takeAsk)}`,
+          }}
+          secondary={
+            onlyApproval ? (
+              // お願いをやめると受け継ぐ物が0件になる＝派生にならないので、この道は出さない
+              <GhostButton label="選び直す" href={base} />
+            ) : (
+              <GhostButton label="お願いせずに続ける" href={`${base}?step=add&take=${encodeURIComponent(takeFree)}`} />
+            )
+          }
+        >
+          <div data-screen="grow-ask" data-provisional="request">
+            <p className={s.card} role="note">
+              仮の形：お願い（申請）の画面は、UTATANE 本体のデータとつなぐ便で作ります。
+            </p>
+            <p>次の物は、作った人の承認が必要です。お願いを送り、返事が来たら使えます。</p>
+            <ul>
+              {picked.needsApproval.map((c) => (
+                <li key={c.id}>{c.label}</li>
+              ))}
+            </ul>
+            {onlyApproval ? (
+              <p className={s.sub}>選んだ物がすべて承認の要る物なので、お願いをやめると受け継ぐ物が無くなります。</p>
+            ) : null}
+          </div>
+        </ScreenFrame>
+      )
+    }
 
-  // 2 何を加えるか
-  if (searchParams.step === 'add' || searchParams.step === 'next') {
-    // 選べない物（利用できません）は、住所に書かれていても受け継がない
-    const take = picked.free.map((c) => c.id).join(',')
-    const ask = searchParams.ask ?? ''
+    // 2 何を加えるか
     const q = (add?: string) =>
-      `/ui/drafts/new?from=${encodeURIComponent(song.id)}&take=${encodeURIComponent(take)}&ask=${encodeURIComponent(ask)}${add ? `&add=${add}` : ''}`
+      `/ui/drafts/new?from=${encodeURIComponent(song.id)}&take=${encodeURIComponent(takeFree)}&ask=${encodeURIComponent(
+        asked.map((c) => c.id).join(','),
+      )}${add ? `&add=${add}` : ''}`
     return (
       <ScreenFrame
         back={{ href: base, label: '何を受け継ぐかへ戻る' }}
@@ -88,44 +105,16 @@ export default function GrowPage({ params, searchParams }: { params: { id: strin
 
   // 1 何を受け継ぐか
   const back = { href: hrefSong(song.id), label: '歌の画面へ' }
-  if (candidates.length === 0) {
+  if (candidates.every((c) => !c.selectable)) {
     return (
-      <ScreenFrame back={back} title={COPY.growTitle}>
+      <ScreenFrame
+        back={back}
+        title={COPY.growTitle}
+        secondary={<GhostButton label="何も受け継がず、新しくつくる" icon="plus" href={NEW_WITHOUT_INHERIT_HREF} />}
+      >
         <StateView kind="empty" message="この歌から受け継げる物は、いまありません。" />
       </ScreenFrame>
     )
   }
-  return (
-    <ScreenFrame
-      back={back}
-      title={COPY.growTitle}
-      primary={{ kind: 'action', label: '次へ', icon: 'right', submitsForm: 'inherit-form' }}
-    >
-      <div data-screen="grow-inherit">
-        {steps(1)}
-        <p>「{song.title}」の一部を受け継いで、あなたが主催する新しい Version をつくります。元の歌は変わりません。</p>
-        <form id="inherit-form" method="get" action={base}>
-          <input type="hidden" name="step" value="next" />
-          <fieldset style={{ border: 0, margin: 0, padding: 0 }}>
-            <legend className={s.section}>何を受け継ぎますか？</legend>
-            {candidates.map((c) => (
-              <label
-                key={c.id}
-                className={`${s.choice} ${c.selectable ? '' : s.choiceOff}`}
-                data-candidate={c.id}
-                data-mode={c.mode}
-              >
-                <input type="checkbox" name="take" value={c.id} disabled={!c.selectable} aria-describedby={`st-${c.id}`} />
-                <span>{c.label}</span>
-                <span className={s.choiceStatus} id={`st-${c.id}`}>
-                  {c.statusLabel}
-                </span>
-              </label>
-            ))}
-          </fieldset>
-        </form>
-        <p className={s.sub}>「利用できません」は選べません。「承認が必要」を選ぶと、次にお願いを送ります。何も受け継がずに進むこともできます。</p>
-      </div>
-    </ScreenFrame>
-  )
+  return <InheritForm songTitle={song.title} action={base} backHref={hrefSong(song.id)} candidates={candidates} />
 }

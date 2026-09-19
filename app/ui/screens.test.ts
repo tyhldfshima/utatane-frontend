@@ -11,7 +11,18 @@ import ConsentPage from './inbox/consent/[id]/page'
 import InboxPage from './inbox/page'
 import MePage from './me/page'
 import HomePage from './page'
-import { creditsOf, creditText, inheritCandidates, recruitmentText, splitSelection } from '@/lib/preview/model'
+import CreatePage from './create/page'
+import { INHERIT_REQUIRED_REASON } from './songs/[id]/grow/InheritForm'
+import {
+  NEW_WITHOUT_INHERIT_HREF,
+  canProceedInherit,
+  creditsOf,
+  creditText,
+  inheritCandidates,
+  recruitmentText,
+  resolveJoinRole,
+  splitSelection,
+} from '@/lib/preview/model'
 import { SONGS } from '@/lib/preview/sample'
 import { COPY, INQUIRY_STORAGE_KEY, startInquiry, takeInquiry } from '@/components/ui'
 import { isNewUiPath } from '@/components/LegacyChrome'
@@ -207,5 +218,83 @@ describe('今までの画面の枠', () => {
     expect(isNewUiPath('/dev/ui')).toBe(true)
     expect(isNewUiPath('/feed')).toBe(false)
     expect(isNewUiPath('/uix')).toBe(false)
+  })
+})
+
+// ── えふさん確定 2026-09-19 追補（参加の役割選択の省略・受け継ぐ物は最低1つ） ──
+
+describe('参加：募集の役割が1つなら、選ぶ操作だけを省く', () => {
+  it('募集1つ：選択画面を出さず、その役割を自動で選んで「送る」へ進む。役割は画面に出す', () => {
+    const html = render(JoinPage, { params: { id: 'yoake' }, searchParams: {} })
+    expect(html).toContain('data-screen="join-submit"')
+    expect(html).toContain('data-auto-role="true"')
+    expect(html).not.toContain('何で参加しますか')
+    expect(html).toContain('作曲で参加')
+    expect(html).toContain('作曲を送る')
+  })
+  it('募集1つ：送りました・制作中の歌にも「作曲で参加」を出す', () => {
+    const sent = render(JoinPage, { params: { id: 'yoake' }, searchParams: { step: 'sent' } })
+    expect(sent).toContain('送りました')
+    expect(sent).toContain('作曲で参加')
+    expect(render(DraftPage, { params: { id: 'yoake-join' }, searchParams: { sent: 'melody' } })).toContain('作曲で参加')
+  })
+  it('募集1つ：戻る先は選択画面ではなく歌の画面（自動で進む画面へ戻り続けない）', () => {
+    const html = render(JoinPage, { params: { id: 'yoake' }, searchParams: {} })
+    expect(html).toContain('href="/ui/songs/yoake"')
+    expect(html).not.toContain('何で参加するかへ戻る')
+  })
+  it('募集複数：今までどおり選択画面が出て、選んだ役割がその後の画面に出る', () => {
+    const role = render(JoinPage, { params: { id: 'minato' }, searchParams: {} })
+    expect(role).toContain('data-screen="join-role"')
+    expect(role).toContain('何で参加しますか')
+    const submit = render(JoinPage, { params: { id: 'minato' }, searchParams: { step: 'submit', role: 'chorus' } })
+    expect(submit).toContain('data-auto-role="false"')
+    expect(submit).toContain('コーラスで参加')
+  })
+  it('募集複数で役割を選ばずに送る画面を開いても、選択画面に戻る', () => {
+    expect(render(JoinPage, { params: { id: 'minato' }, searchParams: { step: 'submit' } })).toContain('data-screen="join-role"')
+    expect(resolveJoinRole(SONGS.minato.recruitment, undefined)).toBeNull()
+    expect(resolveJoinRole(SONGS.yoake.recruitment, undefined)?.autoSelected).toBe(true)
+  })
+})
+
+describe('育てる：受け継ぐ物は最低1つ', () => {
+  it('何も選んでいない間は［次へ］を押せない（押せない理由の一文つき）', () => {
+    const html = render(GrowPage, { params: { id: 'minato' }, searchParams: {} })
+    expect(html).toContain(INHERIT_REQUIRED_REASON)
+    expect(count(html, 'data-ui="primary"')).toBe(0)
+    expect(html).toContain('data-ui="unavailable"')
+    expect(canProceedInherit(0)).toBe(false)
+    expect(canProceedInherit(1)).toBe(true)
+  })
+  it('住所で0件のまま次へ進もうとしても、何を受け継ぐかに留まる', () => {
+    for (const step of ['next', 'add']) {
+      const html = render(GrowPage, { params: { id: 'minato' }, searchParams: { step } })
+      expect(html, step).toContain('data-screen="grow-inherit"')
+      expect(html, step).not.toContain('data-screen="grow-add"')
+    }
+    // 利用できません だけを選んだ形も0件と同じ
+    expect(render(GrowPage, { params: { id: 'minato' }, searchParams: { step: 'next', take: 'c-mix' } })).toContain('data-screen="grow-inherit"')
+  })
+  it('0件で下書きの住所を開いても、下書きを作らない（元の歌との親子を作らない）', () => {
+    const html = render(DraftPage, { params: { id: 'new' }, searchParams: { from: 'minato', take: '', add: 'vocal' } })
+    expect(html).toContain('data-screen="draft-grown-none"')
+    expect(html).not.toContain('下書きに保存しました')
+    expect(html).toContain(`href="${NEW_WITHOUT_INHERIT_HREF}"`)
+  })
+  it('「何も受け継がず、新しくつくる」は ＋つくる の新規作成へ移り、元の歌を持って行かない', () => {
+    const html = render(GrowPage, { params: { id: 'minato' }, searchParams: {} })
+    expect(html).toContain('何も受け継がず、新しくつくる')
+    expect(NEW_WITHOUT_INHERIT_HREF).toBe('/ui/create')
+    expect(html).toContain('href="/ui/create"')
+    expect(html).not.toMatch(/href="\/ui\/create\?/)
+    expect(render(CreatePage)).toContain('data-screen="create"')
+  })
+  it('承認が必要な物だけを選んだときは「お願いせずに続ける」を出さない（0件になるため）', () => {
+    const html = render(GrowPage, { params: { id: 'minato' }, searchParams: { step: 'next', take: 'c-melody' } })
+    expect(html).toContain('data-screen="grow-ask"')
+    expect(html).not.toContain('お願いせずに続ける')
+    const both = render(GrowPage, { params: { id: 'minato' }, searchParams: { step: 'next', take: ['c-lyrics', 'c-melody'] } })
+    expect(both).toContain('お願いせずに続ける')
   })
 })
