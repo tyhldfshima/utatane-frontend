@@ -1,0 +1,635 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>UTATANE 主要4導線 つながった試作</title>
+<!--
+  UTATANE 主要4導線の静的試作（2026-09-19）
+  - 本番のコードとは別。HTML と CSS だけ（スクリプト・外部の読み込みなし）。
+  - 画面の切り替えはページ内のリンク（#画面名）だけで行う。ブラウザの「戻る」でも戻れる。
+  - 色＝Teal 案B（#0A7C74）・文字＝案1（ゴシック）で固定（えふさん確定 2026-09-19）。
+  - 並び・言葉・状態はワイヤー第2版（devlog cd372a44・e06ee9f5・64520ce3）のとおり。
+  - 量の数字は見本値。本物は中央の設定から読む（固定しない）。
+-->
+<style>
+.app{
+  --bg:#FAFAF7; --surface:#FFFFFF; --ink:#1C2424; --sub:#5B6664; --line:#D5DCDA; --on-teal:#FFFFFF;
+  --teal:#0A7C74; --tint:#E0EFED;
+  --font:"Hiragino Sans","Hiragino Kaku Gothic ProN","Yu Gothic UI","Yu Gothic","Meiryo",sans-serif;
+  --head-size:20px; --body-size:15px;
+  font-family:var(--font);font-size:var(--body-size);line-height:1.6;color:var(--ink);
+}
+*{box-sizing:border-box}
+body{margin:0;background:#EEF0EE;font-family:"Hiragino Sans","Yu Gothic UI","Yu Gothic","Meiryo",sans-serif}
+.sw{position:absolute;opacity:0;width:1px;height:1px;margin:0;pointer-events:none}
+
+/* ---------- 上の操作 ---------- */
+.ctl{position:sticky;top:0;z-index:5;background:#FFFFFF;border-bottom:1px solid #D5DCDA;padding:10px 16px;display:flex;flex-wrap:wrap;gap:10px 20px;align-items:center}
+.ctl h1{font-size:16px;margin:0 12px 0 0}
+.grp{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.gl{font-size:13px;color:#5B6664;margin-right:2px}
+.chip{display:inline-flex;align-items:center;gap:6px;min-height:36px;padding:6px 12px;border:1px solid #9AA5A2;border-radius:18px;font-size:13px;cursor:pointer;background:#FFFFFF;color:#1C2424;text-decoration:none}
+.chip:hover{border-color:#1C2424}
+#w-sp:checked ~ .app label[for=w-sp],#w-pc:checked ~ .app label[for=w-pc]{border:2px solid #1C2424;font-weight:700}
+#w-sp:checked ~ .app label[for=w-sp]::before,#w-pc:checked ~ .app label[for=w-pc]::before{content:"選択中 ";font-weight:700}
+#w-sp:focus-visible ~ .app label[for=w-sp],#w-pc:focus-visible ~ .app label[for=w-pc]{outline:3px solid #1C2424;outline-offset:2px}
+.layout{display:flex;gap:28px;padding:16px;align-items:flex-start;flex-wrap:wrap}
+.guide{width:340px;background:#FFFFFF;border:1px solid #D5DCDA;border-radius:12px;padding:12px 14px;font-size:13px;line-height:1.55}
+.guide h2{font-size:14px;margin:0 0 6px}
+.guide ol{margin:0 0 10px;padding-left:1.4em}
+.guide .fixed{color:#5B6664;font-size:12px}
+
+/* ---------- 端末の枠 ---------- */
+.dev{width:360px;height:760px;background:var(--bg);border:1px solid #9AA5A2;border-radius:28px;overflow:hidden;display:grid;
+  grid-template-rows:52px 1fr 56px 60px;grid-template-areas:"top" "main" "player" "tabs"}
+.top{grid-area:top;display:flex;align-items:center;justify-content:space-between;padding:0 8px 0 16px;border-bottom:1px solid var(--line);background:var(--surface)}
+.logo{font-weight:700;font-size:18px;letter-spacing:.04em;color:var(--ink);text-decoration:none}
+.top .right{display:flex;gap:2px;align-items:center}
+.ibtn{display:inline-flex;align-items:center;gap:4px;min-height:44px;min-width:44px;justify-content:center;padding:0 8px;color:var(--ink);font-size:13px;text-decoration:none}
+.mainarea{grid-area:main;position:relative;overflow:hidden}
+.rail,.panel{display:none}
+.player{grid-area:player;display:flex;align-items:center;gap:10px;padding:0 12px;border-top:1px solid var(--line);background:var(--surface)}
+.player .pt{flex:1;min-width:0;font-size:13px;line-height:1.3}
+.player .pt b{display:block;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.player .pt span{color:var(--sub)}
+.pbtn{display:inline-flex;align-items:center;gap:4px;min-height:44px;padding:0 12px;border-radius:22px;border:1px solid var(--teal);background:var(--surface);color:var(--ink);font:inherit;font-size:13px;font-weight:700}
+.pbtn svg{color:var(--teal)}
+.tabs{grid-area:tabs;display:grid;grid-template-columns:repeat(4,1fr);border-top:1px solid var(--line);background:var(--surface)}
+.tab{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font-size:11px;color:var(--sub);position:relative;text-decoration:none}
+.badge{display:inline-block;min-width:18px;padding:0 5px;border-radius:9px;background:var(--ink);color:#FFFFFF;font-size:11px;line-height:18px;text-align:center;font-weight:700}
+
+/* 下タブ・左メニューの「いまいる所」（画面に合わせて変わる） */
+.dev:not(:has(.screen:target,.screen :target)) .t-home,
+.dev:has(#home:target,#song:target,#song-guard:target,#y4-confirm:target,#join:target,#joined:target,#contrib:target,#gift-amount:target,#gift-confirm:target,#gift-done:target,#gift-checking:target,#gift-failed:target,#tree:target,#derived:target) .t-home,
+.dev:has(#create:target,#create-material:target,#material-sent:target,#create-grow:target,#grow-saved:target) .t-create,
+.dev:has(#inbox:target,#consent:target,#step3:target,#consent-confirm:target,#consent-done:target) .t-inbox,
+.dev:has(#me:target,#profile:target) .t-me{color:var(--ink);font-weight:700}
+.dev:not(:has(.screen:target,.screen :target)) .tab.t-home::after,
+.dev:has(#home:target,#song:target,#song-guard:target,#y4-confirm:target,#join:target,#joined:target,#contrib:target,#gift-amount:target,#gift-confirm:target,#gift-done:target,#gift-checking:target,#gift-failed:target,#tree:target,#derived:target) .tab.t-home::after,
+.dev:has(#create:target,#create-material:target,#material-sent:target,#create-grow:target,#grow-saved:target) .tab.t-create::after,
+.dev:has(#inbox:target,#consent:target,#step3:target,#consent-confirm:target,#consent-done:target) .tab.t-inbox::after,
+.dev:has(#me:target,#profile:target) .tab.t-me::after{content:"";position:absolute;top:0;left:25%;right:25%;height:3px;background:var(--teal)}
+
+/* ---------- 画面の切り替え（:target） ---------- */
+.screen{display:none;position:absolute;inset:0;overflow-y:auto;padding:12px 16px 20px;scroll-margin-top:120px}
+.screen:target,.screen:has(:target){display:block}
+.dev:not(:has(.screen:target,.screen :target)) #home{display:block}
+.screen.sheetscreen{padding:0;overflow:hidden}
+
+/* ---------- 線のアイコン（U-2・貢献の印と同じ体系） ---------- */
+svg.i{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round;flex:0 0 auto}
+svg.i.s{width:18px;height:18px}
+svg.i.l{width:28px;height:28px}
+.ic{color:var(--teal)}
+
+/* ---------- 部品 ---------- */
+.back{display:inline-flex;align-items:center;gap:4px;min-height:40px;color:var(--ink);text-decoration:none;font-size:14px;margin-bottom:4px}
+.back svg{color:var(--teal)}
+h2.h,h3.h{font-weight:700;margin:0}
+h2.h{font-size:var(--head-size);line-height:1.35}
+h3.h{font-size:16px;line-height:1.4;margin:16px 0 8px;display:flex;align-items:center;gap:6px}
+h3.h svg{color:var(--teal)}
+.sub{color:var(--sub);font-size:13px}
+.row{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--line);color:var(--ink);text-decoration:none}
+.row:last-child{border-bottom:0}
+a.row:hover b{text-decoration:underline;text-decoration-color:var(--teal)}
+.row .t{flex:1;min-width:0}
+.row .t b{display:block;font-weight:700}
+.jk{width:48px;height:48px;border-radius:8px;background:var(--tint);display:flex;align-items:center;justify-content:center;color:var(--teal);flex:0 0 auto;border:1px solid var(--line)}
+.jk.xl{width:100%;height:170px;border-radius:14px}
+.btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;min-height:48px;border-radius:24px;font:inherit;font-weight:700;border:1px solid var(--teal);background:var(--surface);color:var(--ink);margin:8px 0;text-decoration:none}
+.btn svg{color:var(--teal)}
+.btn.primary{background:var(--teal);color:var(--on-teal)}
+.btn.primary svg{color:var(--on-teal)}
+.btn.ghost{border-color:var(--line)}
+.btn.off{background:#E4E8E6;border-color:#C3CBC8;color:#3E4846;cursor:not-allowed}
+.btn.off svg{color:#3E4846}
+.mini{display:inline-flex;align-items:center;gap:4px;min-height:36px;padding:0 10px;border-radius:18px;border:1px solid var(--teal);background:var(--surface);color:var(--ink);font-size:13px;font-weight:700;text-decoration:none}
+.mini svg{color:var(--teal)}
+.acts{display:flex;gap:8px;flex-wrap:wrap;margin:4px 0 8px}
+.link{color:var(--ink);text-decoration:underline;text-decoration-color:var(--teal);text-decoration-thickness:2px;text-underline-offset:3px;font-weight:700}
+.block{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin:8px 0}
+.mark{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:12px;background:var(--tint);color:var(--ink);font-size:12px;font-weight:700;border:1px solid var(--line)}
+.mark svg{color:var(--teal)}
+.st{display:inline-flex;align-items:center;gap:6px;padding:3px 10px;border-radius:14px;font-size:13px;font-weight:700;border:1px solid var(--line);background:var(--surface);color:var(--ink)}
+.st svg{color:var(--teal)}
+.st.done{background:var(--tint)}
+.st.muted{color:var(--sub);border-style:dashed}
+.why{display:flex;gap:8px;align-items:flex-start;padding:10px 12px;border-radius:10px;border:1px solid var(--line);border-left:4px solid var(--ink);background:var(--surface);font-size:14px;margin:8px 0}
+.why svg{color:var(--teal);margin-top:2px}
+.tagnow{display:inline-block;font-size:12px;font-weight:700;padding:2px 8px;border-radius:10px;border:1px solid var(--ink);margin-bottom:6px}
+.tagfuture{display:block;font-size:13px;font-weight:700;padding:8px 10px;border-radius:10px;border:2px dashed var(--ink);background:#FFFFFF;margin:8px 0}
+.head-row{display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
+.wave{height:36px;border-radius:8px;background:repeating-linear-gradient(90deg,var(--teal) 0 2px,transparent 2px 6px);opacity:.55;margin:6px 0}
+.tree{padding-left:14px;border-left:2px solid var(--teal);margin-left:8px}
+.now{background:var(--tint);border:2px solid var(--teal);border-radius:14px;padding:10px 12px;margin:10px 0}
+.hscroll{display:flex;gap:10px;overflow-x:auto;padding-bottom:4px}
+.card{flex:0 0 132px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:8px;color:var(--ink);text-decoration:none}
+.card .jk{width:100%;height:80px;margin-bottom:6px}
+.card b{display:block;font-size:14px;line-height:1.35}
+.card .sub{display:block;font-size:12px}
+.steps{display:flex;gap:4px;flex-wrap:wrap;margin:6px 0}
+.steps span{font-size:12px;padding:2px 8px;border-radius:10px;border:1px solid var(--line);background:var(--surface)}
+.steps span.cur{border:2px solid var(--teal);font-weight:700}
+.kv{display:grid;grid-template-columns:5.5em 1fr;gap:6px 10px;margin:8px 0}
+.kv dt{color:var(--sub)}
+.kv dd{margin:0;font-weight:700}
+.words{font-size:12px;color:var(--sub);border-top:1px solid var(--line);margin-top:14px;padding-top:8px}
+
+/* シート */
+.dim{position:absolute;inset:0;background:repeating-linear-gradient(0deg,#E4E8E6 0 14px,#EDF0EE 14px 28px)}
+.dim .ghost-title{padding:14px 16px;color:#5B6664;font-size:14px}
+.sheet{position:absolute;left:0;right:0;bottom:0;max-height:92%;overflow-y:auto;background:var(--surface);border-radius:20px 20px 0 0;border-top:1px solid var(--line);padding:10px 16px 16px;box-shadow:0 -6px 20px rgba(0,0,0,.08)}
+.grab{width:40px;height:4px;border-radius:2px;background:#9AA5A2;margin:0 auto 10px}
+.amounts{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:10px 0 4px}
+.amt{display:flex;align-items:center;justify-content:center;min-height:48px;border-radius:12px;border:1px solid var(--line);background:var(--surface);font-weight:700;color:var(--ink);font-size:14px}
+.amt.sel{border:2px solid var(--teal);background:var(--tint)}
+.amt.sel::before{content:"✓";color:var(--teal);margin-right:2px}
+.bal{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:8px 0;border-top:1px solid var(--line);border-bottom:1px solid var(--line);margin:6px 0}
+.big-ok{display:flex;flex-direction:column;align-items:center;text-align:center;gap:8px;padding:12px 0}
+.ring{width:64px;height:64px;border-radius:50%;border:3px solid var(--teal);display:flex;align-items:center;justify-content:center;color:var(--teal)}
+.dialog{position:absolute;left:20px;right:20px;top:30%;background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:16px;box-shadow:0 10px 30px rgba(0,0,0,.15)}
+
+/* ---------- PC 幅 ---------- */
+#w-pc:checked ~ .app .dev{width:1080px;height:680px;border-radius:12px;grid-template-columns:200px 1fr 300px;grid-template-rows:1fr 60px;grid-template-areas:"rail main panel" "player player player"}
+#w-pc:checked ~ .app .top,#w-pc:checked ~ .app .tabs{display:none}
+#w-pc:checked ~ .app .rail{grid-area:rail;display:flex;flex-direction:column;gap:2px;padding:14px 10px;border-right:1px solid var(--line);background:var(--surface)}
+#w-pc:checked ~ .app .rail .logo{padding:4px 10px 14px}
+#w-pc:checked ~ .app .rail a.ra{display:flex;align-items:center;gap:10px;min-height:44px;padding:0 10px;border-radius:10px;color:var(--ink);text-decoration:none;font-size:14px}
+#w-pc:checked ~ .app .rail a.ra svg{color:var(--sub)}
+#w-pc:checked ~ .app .dev:not(:has(.screen:target,.screen :target)) .rail .t-home,
+#w-pc:checked ~ .app .dev:has(#home:target,#song:target,#song-guard:target,#y4-confirm:target,#join:target,#joined:target,#contrib:target,#gift-amount:target,#gift-confirm:target,#gift-done:target,#gift-checking:target,#gift-failed:target,#tree:target,#derived:target) .rail .t-home,
+#w-pc:checked ~ .app .dev:has(#create:target,#create-material:target,#material-sent:target,#create-grow:target,#grow-saved:target) .rail .t-create,
+#w-pc:checked ~ .app .dev:has(#inbox:target,#consent:target,#step3:target,#consent-confirm:target,#consent-done:target) .rail .t-inbox,
+#w-pc:checked ~ .app .dev:has(#me:target,#profile:target) .rail .t-me{background:var(--tint)}
+#w-pc:checked ~ .app .panel{grid-area:panel;display:block;overflow-y:auto;padding:14px 16px;border-left:1px solid var(--line);background:var(--surface)}
+#w-pc:checked ~ .app .screen{padding:18px 28px}
+#w-pc:checked ~ .app .screen.sheetscreen{padding:0}
+#w-pc:checked ~ .app .sheet{left:auto;right:16px;width:380px;border-radius:16px;bottom:16px;border:1px solid var(--line)}
+
+@media (prefers-reduced-motion: reduce){*{transition:none!important;animation:none!important}}
+a:focus-visible{outline:3px solid var(--ink);outline-offset:2px}
+</style>
+</head>
+<body>
+<input class="sw" type="radio" name="width" id="w-sp" checked>
+<input class="sw" type="radio" name="width" id="w-pc">
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-home" viewBox="0 0 24 24"><path d="M3 11l9-7 9 7"/><path d="M5 10v10h14V10"/><path d="M10 20v-6h4v6"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/></symbol>
+  <symbol id="i-inbox" viewBox="0 0 24 24"><path d="M4 13l2-8h12l2 8"/><path d="M4 13v6h16v-6h-5l-1 2h-4l-1-2z"/></symbol>
+  <symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 20c1.5-4 4.5-6 8-6s6.5 2 8 6"/></symbol>
+  <symbol id="i-bell" viewBox="0 0 24 24"><path d="M6 16V11a6 6 0 0 1 12 0v5l2 2H4z"/><path d="M10 20a2 2 0 0 0 4 0"/></symbol>
+  <symbol id="i-point" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.5 16.5V7.5h3.2a2.6 2.6 0 0 1 0 5.2H9.5"/></symbol>
+  <symbol id="i-play" viewBox="0 0 24 24"><path d="M8 5l11 7-11 7z"/></symbol>
+  <symbol id="i-pause" viewBox="0 0 24 24"><path d="M8 5v14M16 5v14"/></symbol>
+  <symbol id="i-heart" viewBox="0 0 24 24"><path d="M12 20s-7-4.5-8.5-9A4.5 4.5 0 0 1 12 7a4.5 4.5 0 0 1 8.5 4C19 15.5 12 20 12 20z"/></symbol>
+  <symbol id="i-later" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
+  <symbol id="i-more" viewBox="0 0 24 24"><circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/></symbol>
+  <symbol id="i-tree" viewBox="0 0 24 24"><circle cx="6" cy="5" r="2"/><circle cx="6" cy="19" r="2"/><circle cx="18" cy="12" r="2"/><path d="M6 7v10M6 12h4a6 6 0 0 0 6 0"/></symbol>
+  <symbol id="i-mic" viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></symbol>
+  <symbol id="i-pen" viewBox="0 0 24 24"><path d="M4 20l4-1 11-11-3-3L5 16z"/><path d="M14 6l3 3"/></symbol>
+  <symbol id="i-note" viewBox="0 0 24 24"><path d="M9 18V5l11-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="17" cy="16" r="3"/></symbol>
+  <symbol id="i-wave" viewBox="0 0 24 24"><path d="M3 12h2M7 8v8M11 5v14M15 9v6M19 7v10"/></symbol>
+  <symbol id="i-seed" viewBox="0 0 24 24"><path d="M12 21v-8"/><path d="M12 13c0-4 3-7 7-7 0 4-3 7-7 7z"/><path d="M12 15c0-3-2.5-5.5-6.5-5.5 0 3 2.5 5.5 6.5 5.5z"/><path d="M8 21h8"/></symbol>
+  <symbol id="i-join" viewBox="0 0 24 24"><circle cx="8" cy="8" r="3"/><circle cx="16" cy="8" r="3"/><path d="M2.5 20c.8-3 3-5 5.5-5s4 1.2 4.8 2.8M11.2 17.8c.8-1.6 2.3-2.8 4.8-2.8 2.5 0 4.7 2 5.5 5"/></symbol>
+  <symbol id="i-branch" viewBox="0 0 24 24"><circle cx="6" cy="6" r="2"/><circle cx="18" cy="6" r="2"/><circle cx="12" cy="19" r="2"/><path d="M6 8c0 5 6 5 6 9M18 8c0 5-6 5-6 9"/></symbol>
+  <symbol id="i-new" viewBox="0 0 24 24"><path d="M12 3v4M12 17v4M3 12h4M17 12h4"/><circle cx="12" cy="12" r="3"/></symbol>
+  <symbol id="i-send" viewBox="0 0 24 24"><path d="M4 12l16-8-6 16-2-6z"/><path d="M12 14l8-10"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12l5 5 9-10"/></symbol>
+  <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M20 11a8 8 0 1 0-2 5.5"/><path d="M20 5v6h-6"/></symbol>
+  <symbol id="i-ext" viewBox="0 0 24 24"><path d="M14 4h6v6M20 4l-9 9"/><path d="M18 14v6H4V6h6"/></symbol>
+  <symbol id="i-down" viewBox="0 0 24 24"><path d="M12 4v12M6 10l6 6 6-6M5 20h14"/></symbol>
+  <symbol id="i-gift" viewBox="0 0 24 24"><rect x="4" y="9" width="16" height="11" rx="1"/><path d="M4 13h16M12 9v11"/><path d="M12 9c-2-4-6-4-6-1s6 1 6 1c2-4 6-4 6-1s-6 1-6 1"/></symbol>
+  <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.5"/></symbol>
+  <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
+  <symbol id="i-left" viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></symbol>
+  <symbol id="i-right" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></symbol>
+  <symbol id="i-hand" viewBox="0 0 24 24"><path d="M7 12V6a1.5 1.5 0 0 1 3 0v5M10 11V4.5a1.5 1.5 0 0 1 3 0V11M13 11V5.5a1.5 1.5 0 0 1 3 0V12M16 12V8.5a1.5 1.5 0 0 1 3 0V14c0 4-3 7-7 7-3 0-5-2-6.5-4.5L3.8 13a1.5 1.5 0 0 1 2.6-1.5L7 12.5"/></symbol>
+  <symbol id="i-doc" viewBox="0 0 24 24"><path d="M6 3h8l4 4v14H6z"/><path d="M14 3v4h4M9 12h6M9 16h6"/></symbol>
+</svg>
+
+<div class="app">
+
+<div class="ctl">
+  <h1>UTATANE 主要4導線 つながった試作</h1>
+  <nav class="grp" aria-label="導線を選ぶ"><span class="gl">導線を選ぶ</span>
+    <a class="chip" href="#home">① ホーム→歌→参加</a>
+    <a class="chip" href="#song">② 歌→ありがとう</a>
+    <a class="chip" href="#inbox">③ 対応待ち→届け方→公開への同意</a>
+    <a class="chip" href="#tree">④ 生まれた流れ→育った歌</a>
+    <a class="chip" href="#me">自分</a>
+  </nav>
+  <div class="grp"><span class="gl">幅</span>
+    <label class="chip" for="w-sp">スマホ（主）</label>
+    <label class="chip" for="w-pc">PC</label>
+  </div>
+</div>
+
+<div class="layout">
+
+<div class="dev">
+  <div class="top"><a class="logo" href="#home">UTATANE</a><span class="right"><a class="ibtn" href="#outside"><svg class="i"><use href="#i-point"/></svg>TYポイント</a><a class="ibtn" href="#outside" aria-label="通知"><svg class="i"><use href="#i-bell"/></svg></a></span></div>
+
+  <nav class="rail" aria-label="メニュー"><a class="logo" href="#home">UTATANE</a>
+    <a class="ra t-home" href="#home"><svg class="i"><use href="#i-home"/></svg>ホーム</a>
+    <a class="ra t-create" href="#create"><svg class="i"><use href="#i-plus"/></svg>つくる</a>
+    <a class="ra t-inbox" href="#inbox"><svg class="i"><use href="#i-inbox"/></svg>対応待ち <span class="badge">1</span></a>
+    <a class="ra" href="#outside"><svg class="i"><use href="#i-bell"/></svg>通知</a>
+    <a class="ra t-me" href="#me"><svg class="i"><use href="#i-user"/></svg>自分</a>
+    <a class="ra" href="#outside"><svg class="i"><use href="#i-point"/></svg>TYポイント<svg class="i s"><use href="#i-ext"/></svg></a>
+  </nav>
+
+  <div class="mainarea">
+
+  <!-- ===== ホーム（W1） ===== -->
+  <section class="screen" id="home" aria-label="ホーム">
+    <h3 class="h" style="margin-top:4px"><svg class="i"><use href="#i-seed"/></svg>種</h3>
+    <div class="hscroll">
+      <a class="card" href="#song"><div class="jk"><svg class="i l"><use href="#i-note"/></svg></div><b>港の灯り</b><span class="sub">あさひ ほか2人</span></a>
+      <span class="card"><div class="jk"><svg class="i l"><use href="#i-pen"/></svg></div><b>夜明けのうた</b><span class="sub">ひなた</span></span>
+    </div>
+    <h3 class="h"><svg class="i"><use href="#i-mic"/></svg>ボーカル待ち</h3>
+    <a class="row" href="#song"><div class="jk"><svg class="i"><use href="#i-mic"/></svg></div><div class="t"><b>港の灯り</b><span class="sub">ハモりのボーカルを募集中</span></div><span class="mini">見る</span></a>
+    <h3 class="h"><svg class="i"><use href="#i-join"/></svg>参加できる曲</h3>
+    <span class="row"><div class="jk"><svg class="i"><use href="#i-wave"/></svg></div><div class="t"><b>春の駅</b><span class="sub">つばさ</span></div><span class="mini"><svg class="i s"><use href="#i-play"/></svg>再生</span></span>
+    <h3 class="h"><svg class="i"><use href="#i-branch"/></svg>枝分かれ</h3>
+    <a class="row" href="#song-guard"><div class="jk"><svg class="i"><use href="#i-branch"/></svg></div><div class="t"><b>灯り、ふたたび</b><span class="sub">つばさ ほか2人</span></div><span class="mini"><svg class="i s"><use href="#i-play"/></svg>再生</span></a>
+    <h3 class="h"><svg class="i"><use href="#i-new"/></svg>新しい Version</h3>
+    <a class="row" href="#derived"><div class="jk"><svg class="i"><use href="#i-mic"/></svg></div><div class="t"><b>港の灯り（ふたりで）</b><span class="sub">みなと ほか1人</span></div><span class="mini"><svg class="i s"><use href="#i-play"/></svg>再生</span></a>
+  </section>
+
+  <!-- ===== 歌の画面（W2） ===== -->
+  <section class="screen" id="song" aria-label="歌の画面">
+    <a class="back" href="#home"><svg class="i s"><use href="#i-left"/></svg>ホームへ</a>
+    <div class="jk xl"><svg class="i l" style="width:52px;height:52px"><use href="#i-note"/></svg></div>
+    <div class="head-row" style="margin-top:10px"><div><h2 class="h">港の灯り</h2><span class="sub">あさひ ほか2人</span></div><span class="ibtn" aria-label="その他の操作"><svg class="i"><use href="#i-more"/></svg></span></div>
+    <span class="btn"><svg class="i"><use href="#i-play"/></svg>再生</span>
+    <a class="btn primary" href="#gift-amount"><svg class="i"><use href="#i-gift"/></svg>ありがとうを贈る</a>
+    <div class="acts"><span class="mini"><svg class="i s"><use href="#i-heart"/></svg>好き</span><span class="mini"><svg class="i s"><use href="#i-later"/></svg>あとで聴く</span></div>
+    <h3 class="h">この作品について</h3>
+    <p style="margin:0">港町の夜を歌った歌です。</p>
+    <h3 class="h">この歌をつくった人</h3>
+    <a class="row" href="#contrib"><svg class="i ic"><use href="#i-pen"/></svg><div class="t">あさひさん　<span class="sub">歌詞</span></div><svg class="i s ic"><use href="#i-right"/></svg></a>
+    <a class="row" href="#contrib"><svg class="i ic"><use href="#i-mic"/></svg><div class="t">みなとさん　<span class="sub">ボーカル</span></div><svg class="i s ic"><use href="#i-right"/></svg></a>
+    <a class="row" href="#contrib"><svg class="i ic"><use href="#i-wave"/></svg><div class="t">つばささん　<span class="sub">ギター</span></div><svg class="i s ic"><use href="#i-right"/></svg></a>
+    <div class="block">
+      <b>この曲に参加する</b>
+      <p class="sub" style="margin:2px 0 4px">いま「ハモりのボーカル」を募集しています。あさひさんの制作に加わり、あなたの歌はその制作の歌の中に入ります。</p>
+      <a class="btn" href="#join" style="margin-bottom:0"><svg class="i"><use href="#i-join"/></svg>この曲に参加する</a>
+    </div>
+    <div class="block">
+      <b>新しい Version として育てる</b>
+      <p class="sub" style="margin:2px 0 4px">元の歌は変わりません。この歌から、あなたが主催の新しい歌をつくります。</p>
+      <a class="btn" href="#create-grow" style="margin-bottom:0"><svg class="i"><use href="#i-branch"/></svg>新しい Version として育てる</a>
+    </div>
+    <a class="btn ghost" href="#tree"><svg class="i"><use href="#i-tree"/></svg>この歌が生まれた流れ</a>
+    <h3 class="h">ほかの人に使ってもらう時の希望</h3>
+    <p style="margin:0">お願いがあれば使えます</p>
+  </section>
+
+  <!-- ===== 参加の入口（シート） ===== -->
+  <section class="screen sheetscreen" id="join" aria-label="この曲に参加する">
+    <div class="dim"><div class="ghost-title">港の灯り（歌の画面）</div>
+      <div class="sheet" role="dialog" aria-label="この曲に参加する">
+        <div class="grab"></div>
+        <h2 class="h" style="font-size:18px">「港の灯り」の制作に参加します</h2>
+        <p style="margin:6px 0">主催：あさひさん。あなたの歌は、この制作の歌の中に入ります（あなたが主催の別の歌をつくるのではありません）。</p>
+        <h3 class="h" style="margin-top:8px">どのパートで参加しますか</h3>
+        <span class="amt sel" style="justify-content:flex-start;padding:0 12px"><svg class="i s ic" style="margin-right:6px"><use href="#i-mic"/></svg>ボーカル（サビのハモり）</span>
+        <p class="sub" style="margin:6px 0">この募集は、主催の承認なしで参加できます。</p>
+        <a class="btn primary" href="#joined"><svg class="i"><use href="#i-join"/></svg>参加する</a>
+        <a class="btn ghost" href="#song">やめる</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== 制作中の歌（W4・参加者から見た形） ===== -->
+  <section class="screen" id="joined" aria-label="制作中の歌">
+    <a class="back" href="#song"><svg class="i s"><use href="#i-left"/></svg>歌の画面へ</a>
+    <h2 class="h">港の灯り（ハモりつき）</h2>
+    <span class="mark"><svg class="i s"><use href="#i-join"/></svg>あさひさんの制作に参加中</span>
+    <h3 class="h">代表の音</h3>
+    <div class="wave" aria-hidden="true"></div>
+    <span class="mini"><svg class="i s"><use href="#i-play"/></svg>再生</span>
+    <h3 class="h">あなたのパート</h3>
+    <div class="block"><b>ボーカル（サビのハモり）</b><br><span class="sub">募集の中身</span><div class="acts" style="margin-top:8px"><span class="link">参加の手引き</span></div><span class="mini"><svg class="i s"><use href="#i-down"/></svg>素材を受け取る</span></div>
+    <span class="btn primary"><svg class="i"><use href="#i-send"/></svg>歌を送る</span>
+    <h3 class="h">あなたが送った物</h3>
+    <p class="sub" style="margin:0">まだ送っていません。送ると「送った歌（まだ入っていません）」と出て、主催が入れると「この歌に入りました」に変わります。</p>
+    <p class="sub">★導線①はここで終わり。</p>
+  </section>
+
+  <!-- ===== 貢献の画面（M4） ===== -->
+  <section class="screen" id="contrib" aria-label="貢献の画面">
+    <a class="back" href="#song"><svg class="i s"><use href="#i-left"/></svg>歌の画面へ</a>
+    <span class="mark"><svg class="i s"><use href="#i-mic"/></svg>ボーカル</span>
+    <h2 class="h" style="margin-top:6px">みなとさんのボーカル</h2>
+    <span class="sub">「港の灯り」の中の歌</span>
+    <span class="btn"><svg class="i"><use href="#i-play"/></svg>再生</span>
+    <h3 class="h">この貢献から生まれた歌</h3>
+    <a class="row" href="#derived"><div class="jk"><svg class="i"><use href="#i-mic"/></svg></div><div class="t"><b>港の灯り（ふたりで）</b><span class="sub">ボーカルを受け継いだ</span></div></a>
+    <h3 class="h">ほかの人に使ってもらう時の希望</h3>
+    <p style="margin:0">お願いがあれば使えます</p>
+    <div class="block" style="margin-top:12px">
+      <b>この素材を使う</b>
+      <p class="sub" style="margin:2px 0 4px">この歌には参加しません。この素材を使って、あなたの新しい歌をつくります。</p>
+      <a class="btn" href="#create-material" style="margin-bottom:0"><svg class="i"><use href="#i-hand"/></svg>この素材を使う</a>
+    </div>
+  </section>
+
+  <!-- ===== 作る（素材を使う・M6） ===== -->
+  <section class="screen" id="create-material" aria-label="作る（素材を使う）">
+    <a class="back" href="#contrib"><svg class="i s"><use href="#i-left"/></svg>戻る</a>
+    <h2 class="h">あなたの新しい歌をつくる</h2>
+    <div class="block"><span class="sub">使う素材</span><br><b>みなとさんのボーカル（「港の灯り」）</b><br><span class="sub">ほかの人に使ってもらう時の希望：お願いがあれば使えます</span></div>
+    <p style="margin:6px 0">この素材は、使わせてとお願いして、返事をもらってから使えます。元の「港の灯り」は変わりません。</p>
+    <a class="btn primary" href="#material-sent"><svg class="i"><use href="#i-hand"/></svg>使わせてとお願いする</a>
+  </section>
+  <section class="screen" id="material-sent" aria-label="お願いを送りました">
+    <div class="big-ok"><span class="ring"><svg class="i l"><use href="#i-check"/></svg></span><h2 class="h">お願いを送りました</h2><p style="margin:0">返事が来たら、対応待ちとお知らせでお伝えします。返事の後に、続きをつくれます。</p></div>
+    <a class="btn primary" href="#home">ホームへ</a>
+    <a class="btn ghost" href="#contrib">貢献の画面へ戻る</a>
+  </section>
+
+  <!-- ===== ありがとう：量を選ぶ（W7） ===== -->
+  <section class="screen sheetscreen" id="gift-amount" aria-label="ありがとうを贈る">
+    <div class="dim"><div class="ghost-title">港の灯り（歌の画面）</div>
+      <div class="sheet" role="dialog" aria-label="ありがとうを贈る">
+        <div class="grab"></div>
+        <h2 class="h" style="font-size:18px">港の灯りに関わった人へ、ありがとうを贈ります</h2>
+        <div class="amounts" role="group" aria-label="量"><span class="amt">100 TYP</span><span class="amt sel">300 TYP</span><span class="amt">500 TYP</span><span class="amt">その他</span></div>
+        <p class="sub" style="margin:0 0 4px">量の札は見本値。本物は中央の設定から読みます。</p>
+        <div class="bal"><div>あなたの TYP<br><b>1,200 TYP</b> <span class="sub">（13時05分 時点）</span></div><span class="mini"><svg class="i s"><use href="#i-refresh"/></svg>更新</span></div>
+        <a class="link" href="#outside" style="font-size:13px">TYポイントで見る <svg class="i s"><use href="#i-ext"/></svg></a>
+        <a class="btn primary" href="#gift-confirm">確認へ</a>
+        <a class="btn ghost" href="#song">閉じる</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== ありがとう：確認（W8） ===== -->
+  <section class="screen sheetscreen" id="gift-confirm" aria-label="贈る前の確認">
+    <div class="dim"><div class="ghost-title">港の灯り（歌の画面）</div>
+      <div class="sheet" role="dialog" aria-label="贈る前の確認">
+        <div class="grab"></div>
+        <h2 class="h" style="font-size:18px">贈る前の確認</h2>
+        <dl class="kv"><dt>贈る先</dt><dd>港の灯り</dd><dt>量</dt><dd>300 TYP</dd><dt>届く人</dt><dd style="font-weight:400">この歌に関わった3人に、決めてある分け方で届きます</dd></dl>
+        <span class="link" style="font-size:14px">届く人を見る</span>
+        <div class="why"><svg class="i s"><use href="#i-info"/></svg>贈ったあとで取り消すことはできません</div>
+        <a class="btn primary" href="#gift-done"><svg class="i"><use href="#i-gift"/></svg>贈る</a>
+        <a class="btn ghost" href="#gift-amount">戻る</a>
+        <p class="sub" style="margin:4px 0 0">ほかの結果の見本：<a class="link" href="#gift-checking">結果を確認しています</a>／<a class="link" href="#gift-failed">贈れませんでした</a></p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== ありがとう：結果（W9） ===== -->
+  <section class="screen sheetscreen" id="gift-done" aria-label="結果">
+    <div class="dim"><div class="ghost-title">港の灯り（歌の画面）</div>
+      <div class="sheet" role="dialog" aria-label="結果">
+        <div class="grab"></div>
+        <div class="big-ok" role="status"><span class="ring"><svg class="i l"><use href="#i-check"/></svg></span><h2 class="h">ありがとうを届けました</h2></div>
+        <a class="btn primary" href="#song">閉じる</a>
+        <a class="btn ghost" href="#outside">履歴を見る <svg class="i s"><use href="#i-ext"/></svg></a>
+        <p class="sub">★導線②はここで終わり。</p>
+      </div>
+    </div>
+  </section>
+  <section class="screen sheetscreen" id="gift-checking" aria-label="結果を確認しています">
+    <div class="dim"><div class="ghost-title">港の灯り（歌の画面）</div>
+      <div class="sheet" role="dialog" aria-label="結果">
+        <div class="grab"></div>
+        <div class="big-ok" role="status"><span class="ring"><svg class="i l"><use href="#i-clock"/></svg></span><h2 class="h">結果を確認しています</h2><p style="margin:0">結果がわかったら、お知らせと TYポイントの履歴でお伝えします。</p></div>
+        <a class="btn primary" href="#song">閉じる</a>
+        <a class="back" href="#gift-confirm"><svg class="i s"><use href="#i-left"/></svg>確認の画面へ（見本を選び直す）</a>
+      </div>
+    </div>
+  </section>
+  <section class="screen sheetscreen" id="gift-failed" aria-label="贈れませんでした">
+    <div class="dim"><div class="ghost-title">港の灯り（歌の画面）</div>
+      <div class="sheet" role="dialog" aria-label="結果">
+        <div class="grab"></div>
+        <div class="big-ok" role="status"><span class="ring"><svg class="i l"><use href="#i-info"/></svg></span><h2 class="h">贈れませんでした</h2><p style="margin:0">1回に贈れるのは設定の上限までです。TYP は減っていません。</p></div>
+        <a class="btn primary" href="#song">閉じる</a>
+        <a class="back" href="#gift-confirm"><svg class="i s"><use href="#i-left"/></svg>確認の画面へ（見本を選び直す）</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== 受け取れない方がいる歌（今の動き＝暫定の止め） ===== -->
+  <section class="screen" id="song-guard" aria-label="歌の画面（受け取れない方がいる歌）">
+    <a class="back" href="#home"><svg class="i s"><use href="#i-left"/></svg>ホームへ</a>
+    <div class="jk xl" style="height:140px"><svg class="i l" style="width:48px;height:48px"><use href="#i-branch"/></svg></div>
+    <h2 class="h" style="margin-top:10px">灯り、ふたたび</h2><span class="sub">つばさ ほか2人</span>
+    <span class="btn"><svg class="i"><use href="#i-play"/></svg>再生</span>
+    <span class="tagnow">今の動き（暫定）</span>
+    <span class="btn off" aria-disabled="true"><svg class="i"><use href="#i-gift"/></svg>ありがとうを贈る</span>
+    <div class="why"><svg class="i s"><use href="#i-info"/></svg>この歌には、いまありがとうを受け取れない方がいるため、贈れません。</div>
+    <div class="tagfuture">Y4 実装後の見本（今の動きではありません）：<a class="link" href="#y4-confirm">受け取れない方がいるときの確認の画面</a></div>
+    <a class="btn ghost" href="#tree"><svg class="i"><use href="#i-tree"/></svg>この歌が生まれた流れ</a>
+  </section>
+  <section class="screen sheetscreen" id="y4-confirm" aria-label="Y4 実装後の見本">
+    <div class="dim"><div class="ghost-title">灯り、ふたたび（歌の画面）</div>
+      <div class="sheet" role="dialog" aria-label="贈る前の確認（Y4 実装後の見本）">
+        <div class="grab"></div>
+        <div class="tagfuture" style="margin-top:0">Y4 実装後の見本です。今の動きではありません（今は、この歌には贈れません）。</div>
+        <h2 class="h" style="font-size:18px">贈る前の確認</h2>
+        <dl class="kv"><dt>贈る先</dt><dd>灯り、ふたたび</dd><dt>量</dt><dd>300 TYP</dd><dt>届く人</dt><dd style="font-weight:400">この歌に関わった方に、決めてある分け方で届きます</dd></dl>
+        <div class="why"><svg class="i s"><use href="#i-info"/></svg>受け取れない方の分は送られず、あなたのポイントからも減りません</div>
+        <div class="why"><svg class="i s"><use href="#i-info"/></svg>贈ったあとで取り消すことはできません</div>
+        <span class="btn off" aria-disabled="true">贈る（見本のため押せません）</span>
+        <a class="btn ghost" href="#song-guard">今の動きの画面へ戻る</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== 対応待ち（M8） ===== -->
+  <section class="screen" id="inbox" aria-label="対応待ち">
+    <h2 class="h">対応待ち</h2>
+    <h3 class="h">公開する前の確認のお願い <span class="badge">1</span></h3>
+    <a class="row" href="#step3"><div class="jk"><svg class="i"><use href="#i-doc"/></svg></div><div class="t"><b>雨のあとで</b><span class="sub">うみさんから。あなたの名前・届け方を確認して、公開に同意してください</span></div><svg class="i s ic"><use href="#i-right"/></svg></a>
+    <h3 class="h">参加希望</h3><p class="sub" style="margin:0">いまはありません</p>
+    <h3 class="h">送られた歌の確認</h3><p class="sub" style="margin:0">いまはありません</p>
+    <h3 class="h">使わせてのお願い</h3><p class="sub" style="margin:0">いまはありません</p>
+  </section>
+
+  <!-- ===== 公開する前の確認（W5・参加者の1枚） ===== -->
+  <section class="screen" id="consent" aria-label="公開する前にみんなで確認する">
+    <a class="back" href="#inbox"><svg class="i s"><use href="#i-left"/></svg>対応待ちへ</a>
+    <h2 class="h" style="font-size:18px">「雨のあとで」を公開する前に、あなたの確認をお願いします</h2>
+    <div class="steps" aria-label="ステップ"><span>1 あなたの音</span><span>2 名前と役割</span><span class="cur">3 届け方</span><span>4 同意</span></div>
+    <h3 class="h">1　あなたの音</h3>
+    <span class="st done"><svg class="i s"><use href="#i-check"/></svg>この歌に入りました</span>
+    <div class="wave" aria-hidden="true"></div>
+    <h3 class="h">2　あなたの名前と役割</h3>
+    <div class="row"><svg class="i ic"><use href="#i-mic"/></svg><div class="t">そらさん　<span class="sub">ボーカル</span></div></div>
+    <span class="link" style="font-size:14px">名前・役割を直してほしいと伝える</span>
+    <h3 class="h" id="step3">3　届け方</h3>
+    <p style="margin:0 0 4px">ありがとうとして TYP が届いたら、この人たちに次のように分かれて届きます。</p>
+    <div class="row"><svg class="i ic"><use href="#i-note"/></svg><div class="t">うみさん（作曲）</div><span class="sub">分け方：主催の案</span></div>
+    <div class="row"><svg class="i ic"><use href="#i-mic"/></svg><div class="t">そらさん（ボーカル）</div><span class="sub">分け方：主催の案</span></div>
+    <div class="row"><svg class="i ic"><use href="#i-pen"/></svg><div class="t">あさひさん（歌詞・使わせてくれた素材）</div><span class="sub">許可のときに届け方にも同意済み</span></div>
+    <p class="sub" style="margin:4px 0">分け方の数字は主催の案が入ります（この試作では決めていません）。</p>
+    <h3 class="h">4　同意</h3>
+    <a class="btn primary" href="#consent-confirm"><svg class="i"><use href="#i-check"/></svg>この内容で公開に同意する</a>
+    <span class="btn ghost">同意しない（主催に理由を伝える）</span>
+  </section>
+  <section class="screen" id="consent-confirm" aria-label="同意の確認">
+    <div class="dim"></div>
+    <div class="dialog" role="dialog" aria-label="同意の確認">
+      <h2 class="h" style="font-size:18px">公開に同意しますか</h2>
+      <p style="margin:6px 0">公開される前なら、同意をやめられます。</p>
+      <a class="btn primary" href="#consent-done">同意する</a>
+      <a class="btn ghost" href="#consent">戻る</a>
+    </div>
+  </section>
+  <section class="screen" id="consent-done" aria-label="同意しました">
+    <div class="big-ok" role="status"><span class="ring"><svg class="i l"><use href="#i-check"/></svg></span><h2 class="h">公開に同意しました</h2>
+      <p style="margin:0">まだ公開はされていません。みんなの同意がそろうと、主催が公開します。</p>
+      <p style="margin:0">公開される前なら、同意をやめられます。</p></div>
+    <div class="block"><b style="font-size:13px">言葉の違い</b>
+      <div class="row"><span class="st"><svg class="i s"><use href="#i-doc"/></svg>下書きに保存しました</span><span class="sub">自分だけの保存</span></div>
+      <div class="row"><span class="st"><svg class="i s"><use href="#i-send"/></svg>送りました</span><span class="sub">主催に歌を渡した</span></div>
+      <div class="row"><span class="st done"><svg class="i s"><use href="#i-check"/></svg>この歌に入りました</span><span class="sub">主催が入れた</span></div>
+      <div class="row"><span class="st done"><svg class="i s"><use href="#i-check"/></svg>公開に同意しました</span><span class="sub">あなたの確認が済んだ</span></div>
+      <div class="row"><span class="st done"><svg class="i s"><use href="#i-new"/></svg>公開しました</span><span class="sub">主催が公開した（誰でも聴ける）</span></div>
+    </div>
+    <a class="btn primary" href="#inbox">対応待ちへ戻る</a>
+    <p class="sub">★導線③はここで終わり。</p>
+  </section>
+
+  <!-- ===== この歌が生まれた流れ（W6） ===== -->
+  <section class="screen" id="tree" aria-label="この歌が生まれた流れ">
+    <a class="back" href="#song"><svg class="i s"><use href="#i-left"/></svg>歌の画面へ</a>
+    <h2 class="h">この歌が生まれた流れ</h2>
+    <h3 class="h">この歌が受け継いだ物</h3>
+    <div class="tree">
+      <div class="row"><svg class="i ic"><use href="#i-pen"/></svg><div class="t">あさひさんの歌詞から</div></div>
+      <div class="row"><svg class="i ic"><use href="#i-branch"/></svg><div class="t">「夜明けのうた」の歌から育った</div></div>
+      <span class="mini" style="margin:6px 0">もっと前へ</span>
+    </div>
+    <div class="now"><span class="mark"><svg class="i s"><use href="#i-note"/></svg>いまの歌</span><div style="margin-top:6px"><b>港の灯り</b><br><span class="sub">あさひ ほか2人</span></div></div>
+    <h3 class="h">この歌から生まれた歌</h3>
+    <div class="tree">
+      <a class="row" href="#derived"><div class="jk"><svg class="i"><use href="#i-mic"/></svg></div><div class="t"><b>港の灯り（ふたりで）</b><span class="sub">ボーカルを受け継いだ</span></div><svg class="i s ic"><use href="#i-right"/></svg></a>
+      <a class="row" href="#song-guard"><div class="jk"><svg class="i"><use href="#i-wave"/></svg></div><div class="t"><b>灯り、ふたたび</b><span class="sub">ギターを受け継いだ</span></div><svg class="i s ic"><use href="#i-right"/></svg></a>
+      <div class="row"><div class="jk" style="background:#E4E8E6;color:#5B6664"><svg class="i"><use href="#i-info"/></svg></div><div class="t"><span class="st muted">いまは見られない歌</span></div></div>
+    </div>
+    <a class="btn" href="#create-grow"><svg class="i"><use href="#i-branch"/></svg>新しい Version として育てる</a>
+  </section>
+
+  <!-- ===== 育った歌（派生した歌の歌の画面） ===== -->
+  <section class="screen" id="derived" aria-label="歌の画面（育った歌）">
+    <a class="back" href="#tree"><svg class="i s"><use href="#i-left"/></svg>生まれた流れへ</a>
+    <div class="jk xl" style="height:140px"><svg class="i l" style="width:48px;height:48px"><use href="#i-mic"/></svg></div>
+    <h2 class="h" style="margin-top:10px">港の灯り（ふたりで）</h2><span class="sub">みなと ほか1人</span>
+    <div class="block" style="margin-top:8px"><span class="mark"><svg class="i s"><use href="#i-branch"/></svg>育った歌</span><p style="margin:4px 0 0">「港の灯り」のボーカルを受け継いで生まれた歌です。元の歌は変わっていません。</p><a class="link" href="#song">元の歌「港の灯り」へ</a></div>
+    <span class="btn"><svg class="i"><use href="#i-play"/></svg>再生</span>
+    <span class="btn primary"><svg class="i"><use href="#i-gift"/></svg>ありがとうを贈る</span>
+    <a class="btn ghost" href="#tree"><svg class="i"><use href="#i-tree"/></svg>この歌が生まれた流れ</a>
+    <p class="sub">★導線④はここで終わり（ありがとうの一周は導線②で）。</p>
+  </section>
+
+  <!-- ===== 作る（今ある歌から育てる・M6） ===== -->
+  <section class="screen" id="create-grow" aria-label="作る（今ある歌から育てる）">
+    <a class="back" href="#tree"><svg class="i s"><use href="#i-left"/></svg>戻る</a>
+    <h2 class="h">今ある歌から育てる</h2>
+    <div class="block"><span class="sub">元の歌</span><br><b>港の灯り</b><br><span class="sub">元の歌は変わりません。新しい枝として、あなたの歌をつくります。</span></div>
+    <h3 class="h">素材</h3><span class="mini"><svg class="i s"><use href="#i-mic"/></svg>録る</span> <span class="mini"><svg class="i s"><use href="#i-doc"/></svg>選ぶ</span>
+    <h3 class="h">出どころ</h3><p class="sub" style="margin:0">自分でつくった／ほかから／AI を使った／管理団体に預けているか</p>
+    <h3 class="h">ほかの人に使ってもらう時の希望</h3><p class="sub" style="margin:0">自由／お願いがあれば／使わないで</p>
+    <a class="btn primary" href="#grow-saved"><svg class="i"><use href="#i-doc"/></svg>下書きに保存して次へ</a>
+  </section>
+  <section class="screen" id="grow-saved" aria-label="下書きに保存しました">
+    <div class="big-ok" role="status"><span class="ring"><svg class="i l"><use href="#i-doc"/></svg></span><h2 class="h">下書きに保存しました</h2><p style="margin:0">まだ誰にも公開されていません。続きは「自分」の下書きから開けます。</p></div>
+    <a class="btn primary" href="#me">自分の下書きへ</a>
+    <a class="btn ghost" href="#tree">生まれた流れへ戻る</a>
+  </section>
+
+  <!-- ===== ＋つくる（何から始めますか） ===== -->
+  <section class="screen sheetscreen" id="create" aria-label="何から始めますか">
+    <div class="dim"><div class="ghost-title">＋つくる</div>
+      <div class="sheet" role="dialog" aria-label="何から始めますか">
+        <div class="grab"></div>
+        <h2 class="h" style="font-size:18px">何から始めますか</h2>
+        <span class="btn"><svg class="i"><use href="#i-mic"/></svg>音・鼻歌から始める</span>
+        <span class="btn"><svg class="i"><use href="#i-pen"/></svg>歌詞から始める</span>
+        <span class="btn"><svg class="i"><use href="#i-note"/></svg>音源を投稿する</span>
+        <a class="btn" href="#tree"><svg class="i"><use href="#i-branch"/></svg>今ある歌から育てる</a>
+        <a class="btn ghost" href="#home">閉じる</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== 自分（最初は自分用の管理画面・M10） ===== -->
+  <section class="screen" id="me" aria-label="自分">
+    <h2 class="h">自分</h2>
+    <a class="block" href="#profile" style="display:flex;align-items:center;gap:10px;text-decoration:none;color:var(--ink)"><span style="width:44px;height:44px;border-radius:50%;background:var(--tint);border:2px solid var(--teal);display:flex;align-items:center;justify-content:center;font-weight:700">そ</span><span style="flex:1"><b>そら</b><br><span class="sub">公開プロフィールを見る（ほかの人から見える形）</span></span><svg class="i s ic"><use href="#i-right"/></svg></a>
+    <h3 class="h"><svg class="i"><use href="#i-doc"/></svg>下書き</h3>
+    <div class="row"><div class="t"><b>「港の灯り」から育てた歌</b><span class="sub">まだ誰にも公開されていません</span></div></div>
+    <h3 class="h"><svg class="i"><use href="#i-mic"/></svg>自分の貢献</h3>
+    <div class="row"><div class="t"><b>雨のあとで</b><span class="mark"><svg class="i s"><use href="#i-mic"/></svg>ボーカル</span></div></div>
+    <h3 class="h"><svg class="i"><use href="#i-send"/></svg>採用されなかった送り物</h3>
+    <div class="row"><div class="t"><b>ハモり 別案（雨のあとで）</b><span class="st muted">今回は見送られました</span></div></div>
+    <h3 class="h"><svg class="i"><use href="#i-later"/></svg>あとで聴く</h3>
+    <a class="row" href="#song"><div class="t"><b>港の灯り</b><span class="sub">あさひ ほか2人</span></div></a>
+  </section>
+
+  <!-- ===== 公開プロフィール（M9） ===== -->
+  <section class="screen" id="profile" aria-label="公開プロフィール">
+    <a class="back" href="#me"><svg class="i s"><use href="#i-left"/></svg>自分の管理画面へ</a>
+    <div style="display:flex;align-items:center;gap:12px"><div style="width:64px;height:64px;border-radius:50%;background:var(--tint);border:2px solid var(--teal);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:26px">そ</div><div><h2 class="h">そら</h2><div class="acts" style="margin:4px 0 0"><span class="mark"><svg class="i s"><use href="#i-mic"/></svg>ボーカル</span><span class="mark"><svg class="i s"><use href="#i-pen"/></svg>歌詞</span></div></div></div>
+    <p class="sub" style="margin:8px 0 0">ほかの人から見える形です。</p>
+    <h3 class="h">つくった歌</h3>
+    <span class="row"><div class="jk"><svg class="i"><use href="#i-note"/></svg></div><div class="t"><b>坂の上の風</b><span class="sub">そら</span></div></span>
+    <h3 class="h">参加した歌</h3>
+    <span class="row"><div class="jk"><svg class="i"><use href="#i-wave"/></svg></div><div class="t"><b>春の駅</b><span class="mark"><svg class="i s"><use href="#i-mic"/></svg>ボーカル</span></div></span>
+    <h3 class="h">貢献が使われた歌</h3>
+    <span class="row"><div class="jk"><svg class="i"><use href="#i-branch"/></svg></div><div class="t"><b>春の駅（ゆっくり）</b><span class="mark"><svg class="i s"><use href="#i-mic"/></svg>ボーカルが使われた</span></div></span>
+  </section>
+
+  <!-- ===== この試作の外 ===== -->
+  <section class="screen" id="outside" aria-label="この試作の外の画面">
+    <h2 class="h">この試作の外の画面です</h2>
+    <p>TYポイント（point.ty-hld.com）・履歴・通知は、この試作では描いていません。TYポイントへは別のタブで開き、UTATANE の再生は止めません。</p>
+    <a class="btn primary" href="#home">ホームへ</a>
+  </section>
+
+  </div><!-- /mainarea -->
+
+  <aside class="panel"><b>いま鳴っている歌</b><p style="margin:4px 0">港の灯り<br><span class="sub">あさひ ほか2人</span></p><a class="btn primary" href="#gift-amount"><svg class="i"><use href="#i-gift"/></svg>ありがとうを贈る</a><a class="btn" href="#tree"><svg class="i"><use href="#i-tree"/></svg>この歌が生まれた流れ</a><p class="sub">PC では、ありがとうのシートは右下に重ねて開く。</p></aside>
+
+  <div class="player"><svg class="i ic"><use href="#i-note"/></svg><div class="pt"><b>港の灯り</b><span>あさひ ほか2人</span></div><span class="pbtn"><svg class="i s"><use href="#i-pause"/></svg>停止</span></div>
+  <nav class="tabs" aria-label="下のタブ">
+    <a class="tab t-home" href="#home"><svg class="i"><use href="#i-home"/></svg>ホーム</a>
+    <a class="tab t-create" href="#create"><svg class="i"><use href="#i-plus"/></svg>＋つくる</a>
+    <a class="tab t-inbox" href="#inbox"><svg class="i"><use href="#i-inbox"/></svg>対応待ち <span class="badge">1</span></a>
+    <a class="tab t-me" href="#me"><svg class="i"><use href="#i-user"/></svg>自分</a>
+  </nav>
+</div><!-- /dev -->
+
+<aside class="guide" aria-label="導線の並び">
+  <h2>導線の並び（押して進む・「戻る」かブラウザの戻るで戻る）</h2>
+  <b>① ホーム→歌→参加</b>
+  <ol><li>ホーム</li><li>歌の画面（参加する／育てるを別の枠で）</li><li>この曲に参加する（シート）</li><li>制作中の歌（参加中）</li></ol>
+  <span class="fixed">取り違えの見本：歌の画面のクレジット → 貢献の画面 → この素材を使う → あなたの新しい歌をつくる → お願いを送りました</span>
+  <b style="display:block;margin-top:10px">② 歌→ありがとう</b>
+  <ol><li>歌の画面</li><li>量を選ぶ（シート）</li><li>贈る前の確認</li><li>結果（ありがとうを届けました／結果を確認しています／贈れませんでした）</li></ol>
+  <span class="fixed">受け取れない方がいる歌：ホームの「灯り、ふたたび」＝今の動きは「贈れない」。Y4 実装後の見本は札つきの別画面。</span>
+  <b style="display:block;margin-top:10px">③ 対応待ち→届け方→公開への同意</b>
+  <ol><li>対応待ち</li><li>公開する前の確認（3 届け方に着地）</li><li>同意の確認</li><li>公開に同意しました（まだ公開されていない）</li></ol>
+  <b style="display:block;margin-top:10px">④ 生まれた流れ→育った歌</b>
+  <ol><li>この歌が生まれた流れ</li><li>育った歌の歌の画面</li></ol>
+  <span class="fixed">育てる：生まれた流れ → 今ある歌から育てる → 下書きに保存しました</span>
+  <b style="display:block;margin-top:10px">自分</b>
+  <ol><li>自分（管理画面）</li><li>公開プロフィール</li></ol>
+  <p class="fixed">色＝Teal 案B・文字＝案1 で固定。量の数字は見本値。題名・名前は見本（見ている人＝そら）。</p>
+</aside>
+
+</div><!-- /layout -->
+</div><!-- /app -->
+</body>
+</html>
