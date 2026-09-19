@@ -1,0 +1,472 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>UTATANE 重点6画面 見た目の試作</title>
+<!--
+  UTATANE 重点6画面の見た目の静的試作（UIデザイン便①・2026-09-19）
+  - 本番のコードとは別。HTML と CSS だけ（スクリプト・外部の読み込みなし）。
+  - 並び・言葉・状態は第一群12画面ワイヤー 第2版（devlog cd372a44・e06ee9f5・64520ce3）のとおり。
+  - プロフィールは第2版に無いので、確定済みの M9（チャンネル）の中身だけで描いた。
+  - Teal の3案と文字の2案は見比べのための候補。どれにするかはまだ決めていない。
+-->
+<style>
+/* ---------- 見比べの候補（ここだけが切り替わる） ---------- */
+.app{
+  --bg:#FAFAF7; --surface:#FFFFFF; --ink:#1C2424; --sub:#5B6664; --line:#D5DCDA; --on-teal:#FFFFFF;
+  /* Teal 案B（初期表示） */
+  --teal:#0A7C74; --tint:#E0EFED;
+  /* 文字 案1（初期表示） */
+  --font-head:"Hiragino Sans","Hiragino Kaku Gothic ProN","Yu Gothic UI","Yu Gothic","Meiryo",sans-serif;
+  --font-body:"Hiragino Sans","Hiragino Kaku Gothic ProN","Yu Gothic UI","Yu Gothic","Meiryo",sans-serif;
+  --head-size:20px; --head-weight:700; --body-size:15px; --body-lh:1.6;
+}
+#teal-a:checked ~ .app{ --teal:#0E9F90; --tint:#E2F5F2; }
+#teal-b:checked ~ .app{ --teal:#0A7C74; --tint:#E0EFED; }
+#teal-c:checked ~ .app{ --teal:#3F7F7A; --tint:#E7EFEE; }
+#type-1:checked ~ .app{
+  --font-head:"Hiragino Sans","Hiragino Kaku Gothic ProN","Yu Gothic UI","Yu Gothic","Meiryo",sans-serif;
+  --head-size:20px; --head-weight:700; --body-size:15px; --body-lh:1.6;
+}
+#type-2:checked ~ .app{
+  --font-head:"Hiragino Mincho ProN","Yu Mincho","YuMincho","Noto Serif JP",serif;
+  --head-size:21px; --head-weight:600; --body-size:16px; --body-lh:1.75;
+}
+
+/* ---------- 切り替えの部品（キーボードでも操作できるよう、見えない形で残す） ---------- */
+.sw{position:absolute;opacity:0;width:1px;height:1px;margin:0;pointer-events:none}
+*{box-sizing:border-box}
+body{margin:0;background:#EEF0EE;color:#1C2424;font-family:"Hiragino Sans","Yu Gothic UI","Yu Gothic","Meiryo",sans-serif}
+.app{font-family:var(--font-body);font-size:var(--body-size);line-height:var(--body-lh);color:var(--ink)}
+.ctl{position:sticky;top:0;z-index:5;background:#FFFFFF;border-bottom:1px solid #D5DCDA;padding:12px 16px;display:flex;flex-wrap:wrap;gap:12px 24px;align-items:center}
+.ctl h1{font-size:16px;margin:0 16px 0 0;font-family:"Hiragino Sans","Yu Gothic UI","Yu Gothic","Meiryo",sans-serif}
+.grp{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.grp .gl{font-size:13px;color:#5B6664;margin-right:4px}
+.chip{display:inline-flex;align-items:center;gap:6px;min-height:36px;padding:6px 12px;border:1px solid #9AA5A2;border-radius:18px;font-size:13px;cursor:pointer;background:#FFFFFF;color:#1C2424}
+.chip .sw-dot{width:14px;height:14px;border-radius:50%;border:1px solid #1C2424}
+#teal-a:checked ~ .app label[for=teal-a],#teal-b:checked ~ .app label[for=teal-b],#teal-c:checked ~ .app label[for=teal-c],
+#type-1:checked ~ .app label[for=type-1],#type-2:checked ~ .app label[for=type-2],
+#w-sp:checked ~ .app label[for=w-sp],#w-pc:checked ~ .app label[for=w-pc]{border:2px solid #1C2424;font-weight:700}
+#teal-a:checked ~ .app label[for=teal-a]::before,#teal-b:checked ~ .app label[for=teal-b]::before,#teal-c:checked ~ .app label[for=teal-c]::before,
+#type-1:checked ~ .app label[for=type-1]::before,#type-2:checked ~ .app label[for=type-2]::before,
+#w-sp:checked ~ .app label[for=w-sp]::before,#w-pc:checked ~ .app label[for=w-pc]::before{content:"選択中 ";font-weight:700}
+#teal-a:focus-visible ~ .app label[for=teal-a],#teal-b:focus-visible ~ .app label[for=teal-b],#teal-c:focus-visible ~ .app label[for=teal-c],
+#type-1:focus-visible ~ .app label[for=type-1],#type-2:focus-visible ~ .app label[for=type-2],
+#w-sp:focus-visible ~ .app label[for=w-sp],#w-pc:focus-visible ~ .app label[for=w-pc]{outline:3px solid #1C2424;outline-offset:2px}
+.note{font-size:12px;color:#5B6664;padding:8px 16px 0}
+
+/* ---------- 並べる台 ---------- */
+.stage{display:flex;gap:28px;padding:20px 16px 40px;overflow-x:auto;align-items:flex-start}
+.frame{flex:0 0 auto}
+.flabel{font:700 14px/1.4 "Hiragino Sans","Yu Gothic UI","Yu Gothic","Meiryo",sans-serif;margin:0 0 8px;color:#1C2424}
+.flabel small{font-weight:400;color:#5B6664;margin-left:6px}
+.seq{display:flex;gap:16px}
+
+/* ---------- 端末の枠（スマホ） ---------- */
+.dev{width:360px;height:740px;background:var(--bg);border:1px solid #9AA5A2;border-radius:28px;overflow:hidden;display:grid;
+  grid-template-rows:52px 1fr 56px 60px;grid-template-columns:1fr;grid-template-areas:"top" "scr" "player" "tabs";position:relative}
+.dev.sheetdev{grid-template-rows:52px 1fr 56px 60px}
+.top{grid-area:top;display:flex;align-items:center;justify-content:space-between;padding:0 12px 0 16px;border-bottom:1px solid var(--line);background:var(--surface)}
+.logo{font-family:var(--font-head);font-weight:var(--head-weight);font-size:18px;letter-spacing:.04em;color:var(--ink)}
+.top .right{display:flex;gap:4px;align-items:center}
+.ibtn{display:inline-flex;align-items:center;gap:4px;min-height:44px;min-width:44px;justify-content:center;padding:0 8px;border:0;background:transparent;color:var(--ink);font:inherit;font-size:13px}
+.scr{grid-area:scr;overflow-y:auto;padding:14px 16px 20px}
+.rail,.panel{display:none}
+.player{grid-area:player;display:flex;align-items:center;gap:10px;padding:0 12px;border-top:1px solid var(--line);background:var(--surface)}
+.player .pt{flex:1;min-width:0;font-size:13px;line-height:1.3}
+.player .pt b{display:block;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.player .pt span{color:var(--sub)}
+.pbtn{display:inline-flex;align-items:center;gap:4px;min-height:44px;padding:0 12px;border-radius:22px;border:1px solid var(--teal);background:var(--surface);color:var(--ink);font:inherit;font-size:13px;font-weight:700}
+.pbtn svg{color:var(--teal)}
+.tabs{grid-area:tabs;display:grid;grid-template-columns:repeat(4,1fr);border-top:1px solid var(--line);background:var(--surface)}
+.tab{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font-size:11px;color:var(--sub);position:relative}
+.tab.on{color:var(--ink);font-weight:700}
+.tab.on::after{content:"";position:absolute;top:0;left:25%;right:25%;height:3px;background:var(--teal)}
+.tab.on svg{color:var(--teal)}
+.badge{display:inline-block;min-width:18px;padding:0 5px;border-radius:9px;background:var(--ink);color:#FFFFFF;font-size:11px;line-height:18px;text-align:center;font-weight:700}
+
+/* ---------- 線のアイコン（U-2） ---------- */
+svg.i{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round;flex:0 0 auto}
+svg.i.s{width:18px;height:18px}
+svg.i.l{width:28px;height:28px}
+
+/* ---------- 中身の部品 ---------- */
+h2.h,h3.h{font-family:var(--font-head);font-weight:var(--head-weight);margin:0}
+h2.h{font-size:var(--head-size);line-height:1.35}
+h3.h{font-size:calc(var(--head-size) - 4px);line-height:1.4;margin:18px 0 8px}
+.sub{color:var(--sub);font-size:calc(var(--body-size) - 2px)}
+.row{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--line)}
+.row:last-child{border-bottom:0}
+.row .t{flex:1;min-width:0}
+.row .t b{display:block;font-weight:700}
+.jk{width:48px;height:48px;border-radius:8px;background:var(--tint);display:flex;align-items:center;justify-content:center;color:var(--teal);flex:0 0 auto;border:1px solid var(--line)}
+.jk.xl{width:100%;height:190px;border-radius:14px}
+.hscroll{display:flex;gap:10px;overflow-x:auto;padding-bottom:4px}
+.card{flex:0 0 132px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:8px}
+.card .jk{width:100%;height:84px;margin-bottom:6px}
+.card b{display:block;font-size:14px;line-height:1.35}
+.card .sub{display:block;font-size:12px}
+.card .mini{margin-top:6px}
+.btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;min-height:48px;border-radius:24px;font:inherit;font-weight:700;border:1px solid var(--teal);background:var(--surface);color:var(--ink);margin:8px 0}
+.btn svg{color:var(--teal)}
+.btn.primary{background:var(--teal);color:var(--on-teal);border-color:var(--teal)}
+.btn.primary svg{color:var(--on-teal)}
+.btn.ghost{border-color:var(--line)}
+.btn.small{display:inline-flex;width:auto;min-height:40px;padding:0 14px;font-size:14px;margin:0}
+.btn[disabled]{opacity:1;background:#E4E8E6;border-color:#C3CBC8;color:#3E4846}
+.mini{display:inline-flex;align-items:center;gap:4px;min-height:36px;padding:0 10px;border-radius:18px;border:1px solid var(--teal);background:var(--surface);color:var(--ink);font:inherit;font-size:13px;font-weight:700}
+.mini svg{color:var(--teal)}
+.acts{display:flex;gap:8px;flex-wrap:wrap;margin:4px 0 8px}
+.link{color:var(--ink);text-decoration:underline;text-decoration-color:var(--teal);text-decoration-thickness:2px;text-underline-offset:3px;font-weight:700}
+.block{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin:8px 0}
+.mark{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:12px;background:var(--tint);color:var(--ink);font-size:12px;font-weight:700;border:1px solid var(--line)}
+.mark svg{color:var(--teal)}
+.st{display:inline-flex;align-items:center;gap:6px;padding:3px 10px;border-radius:14px;font-size:13px;font-weight:700;border:1px solid var(--line);background:var(--surface);color:var(--ink)}
+.st svg{color:var(--teal)}
+.st.done{background:var(--tint)}
+.st.muted{color:var(--sub);border-style:dashed}
+.why{display:flex;gap:8px;align-items:flex-start;padding:10px 12px;border-radius:10px;border:1px solid var(--line);border-left:4px solid var(--ink);background:var(--surface);font-size:14px;margin:8px 0}
+.head-row{display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
+.wave{height:36px;border-radius:8px;background:repeating-linear-gradient(90deg,var(--teal) 0 2px,transparent 2px 6px);opacity:.55;margin:6px 0}
+.tree{position:relative;padding-left:16px;border-left:2px solid var(--teal);margin-left:8px}
+.now{background:var(--tint);border:2px solid var(--teal);border-radius:14px;padding:10px 12px;margin:10px 0}
+
+/* ---------- シート（TYP を贈る） ---------- */
+.dim{grid-area:scr;background:repeating-linear-gradient(0deg,#E4E8E6 0 14px,#EDF0EE 14px 28px);position:relative;overflow:hidden}
+.dim .ghost-title{padding:16px;color:#7B8583;font-size:14px}
+.sheet{position:absolute;left:0;right:0;bottom:0;background:var(--surface);border-radius:20px 20px 0 0;border-top:1px solid var(--line);padding:10px 16px 16px;box-shadow:0 -6px 20px rgba(0,0,0,.08)}
+.grab{width:40px;height:4px;border-radius:2px;background:#9AA5A2;margin:0 auto 10px}
+.amounts{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:10px 0}
+.amt{min-height:48px;border-radius:12px;border:1px solid var(--line);background:var(--surface);font:inherit;font-weight:700;color:var(--ink)}
+.amt.sel{border:2px solid var(--teal);background:var(--tint)}
+.amt.sel::before{content:"✓ ";color:var(--teal)}
+.bal{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:8px 0;border-top:1px solid var(--line);border-bottom:1px solid var(--line);margin:6px 0}
+.kv{display:grid;grid-template-columns:5.5em 1fr;gap:6px 10px;margin:8px 0}
+.kv dt{color:var(--sub)}
+.kv dd{margin:0;font-weight:700}
+.big-ok{display:flex;flex-direction:column;align-items:center;text-align:center;gap:8px;padding:14px 0}
+.big-ok .ring{width:64px;height:64px;border-radius:50%;border:3px solid var(--teal);display:flex;align-items:center;justify-content:center;color:var(--teal)}
+
+/* ---------- 状態の見本（どの画面にも「空・読み込み中・できない理由・完了」） ---------- */
+.states{width:360px;margin-top:10px;background:#FFFFFF;border:1px solid #D5DCDA;border-radius:12px;padding:10px 12px;font-size:13px}
+.states b.lab{display:block;font-size:12px;color:#5B6664;margin-bottom:6px;font-family:"Hiragino Sans","Yu Gothic UI","Yu Gothic","Meiryo",sans-serif}
+.states ul{list-style:none;margin:0;padding:0;display:grid;gap:6px}
+.states li{display:flex;gap:8px;align-items:flex-start}
+.states .k{flex:0 0 6.5em;color:#5B6664}
+.skel{display:inline-block;height:10px;width:120px;border-radius:5px;background:#DCE2E0;vertical-align:middle}
+
+/* ---------- PC 幅 ---------- */
+#w-pc:checked ~ .app .stage{flex-direction:column;overflow-x:visible}
+#w-pc:checked ~ .app .dev{width:1080px;height:640px;border-radius:12px;grid-template-columns:200px 1fr 320px;grid-template-rows:1fr 60px;grid-template-areas:"rail scr panel" "player player player"}
+#w-pc:checked ~ .app .top,#w-pc:checked ~ .app .tabs{display:none}
+#w-pc:checked ~ .app .rail{grid-area:rail;display:flex;flex-direction:column;gap:2px;padding:14px 10px;border-right:1px solid var(--line);background:var(--surface)}
+#w-pc:checked ~ .app .rail .logo{padding:4px 10px 14px}
+#w-pc:checked ~ .app .rail a{display:flex;align-items:center;gap:10px;min-height:44px;padding:0 10px;border-radius:10px;color:var(--ink);text-decoration:none;font-size:14px}
+#w-pc:checked ~ .app .rail a.on{background:var(--tint);font-weight:700}
+#w-pc:checked ~ .app .rail a.on svg{color:var(--teal)}
+#w-pc:checked ~ .app .panel{grid-area:panel;display:block;overflow-y:auto;padding:14px 16px;border-left:1px solid var(--line);background:var(--surface)}
+#w-pc:checked ~ .app .scr{padding:20px 28px}
+#w-pc:checked ~ .app .seq{flex-direction:row}
+#w-pc:checked ~ .app .seq .dev{width:360px;height:640px;grid-template-columns:1fr;grid-template-rows:0 1fr 0 0;grid-template-areas:"top" "scr" "player" "tabs";border-radius:12px}
+#w-pc:checked ~ .app .seq .dev .rail,#w-pc:checked ~ .app .seq .dev .panel,#w-pc:checked ~ .app .seq .dev .player{display:none}
+#w-pc:checked ~ .app .pc-only{display:block}
+.pc-only{display:none}
+#w-pc:checked ~ .app .states{width:1080px}
+#w-pc:checked ~ .app .seq + .states{width:1112px}
+
+/* ---------- 動きを減らす設定 ---------- */
+@media (prefers-reduced-motion: reduce){*{transition:none!important;animation:none!important}}
+button:focus-visible,a:focus-visible{outline:3px solid var(--ink);outline-offset:2px}
+</style>
+</head>
+<body>
+
+<!-- 切り替え（Teal 3案・文字 2案・幅） -->
+<input class="sw" type="radio" name="teal" id="teal-a">
+<input class="sw" type="radio" name="teal" id="teal-b" checked>
+<input class="sw" type="radio" name="teal" id="teal-c">
+<input class="sw" type="radio" name="type" id="type-1" checked>
+<input class="sw" type="radio" name="type" id="type-2">
+<input class="sw" type="radio" name="width" id="w-sp" checked>
+<input class="sw" type="radio" name="width" id="w-pc">
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-home" viewBox="0 0 24 24"><path d="M3 11l9-7 9 7"/><path d="M5 10v10h14V10"/><path d="M10 20v-6h4v6"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/></symbol>
+  <symbol id="i-inbox" viewBox="0 0 24 24"><path d="M4 13l2-8h12l2 8"/><path d="M4 13v6h16v-6h-5l-1 2h-4l-1-2z"/></symbol>
+  <symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 20c1.5-4 4.5-6 8-6s6.5 2 8 6"/></symbol>
+  <symbol id="i-bell" viewBox="0 0 24 24"><path d="M6 16V11a6 6 0 0 1 12 0v5l2 2H4z"/><path d="M10 20a2 2 0 0 0 4 0"/></symbol>
+  <symbol id="i-point" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.5 16.5V7.5h3.2a2.6 2.6 0 0 1 0 5.2H9.5"/></symbol>
+  <symbol id="i-play" viewBox="0 0 24 24"><path d="M8 5l11 7-11 7z"/></symbol>
+  <symbol id="i-pause" viewBox="0 0 24 24"><path d="M8 5v14M16 5v14"/></symbol>
+  <symbol id="i-heart" viewBox="0 0 24 24"><path d="M12 20s-7-4.5-8.5-9A4.5 4.5 0 0 1 12 7a4.5 4.5 0 0 1 8.5 4C19 15.5 12 20 12 20z"/></symbol>
+  <symbol id="i-later" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
+  <symbol id="i-more" viewBox="0 0 24 24"><circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/></symbol>
+  <symbol id="i-tree" viewBox="0 0 24 24"><circle cx="6" cy="5" r="2"/><circle cx="6" cy="19" r="2"/><circle cx="18" cy="12" r="2"/><path d="M6 7v10M6 12h4a6 6 0 0 0 6 0"/></symbol>
+  <symbol id="i-mic" viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></symbol>
+  <symbol id="i-pen" viewBox="0 0 24 24"><path d="M4 20l4-1 11-11-3-3L5 16z"/><path d="M14 6l3 3"/></symbol>
+  <symbol id="i-note" viewBox="0 0 24 24"><path d="M9 18V5l11-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="17" cy="16" r="3"/></symbol>
+  <symbol id="i-wave" viewBox="0 0 24 24"><path d="M3 12h2M7 8v8M11 5v14M15 9v6M19 7v10M21 12h0"/></symbol>
+  <symbol id="i-send" viewBox="0 0 24 24"><path d="M4 12l16-8-6 16-2-6z"/><path d="M12 14l8-10"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12l5 5 9-10"/></symbol>
+  <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M20 11a8 8 0 1 0-2 5.5"/><path d="M20 5v6h-6"/></symbol>
+  <symbol id="i-ext" viewBox="0 0 24 24"><path d="M14 4h6v6M20 4l-9 9"/><path d="M18 14v6H4V6h6"/></symbol>
+  <symbol id="i-down" viewBox="0 0 24 24"><path d="M12 4v12M6 10l6 6 6-6M5 20h14"/></symbol>
+  <symbol id="i-branch" viewBox="0 0 24 24"><circle cx="6" cy="6" r="2"/><circle cx="18" cy="6" r="2"/><circle cx="12" cy="19" r="2"/><path d="M6 8c0 5 6 5 6 9M18 8c0 5-6 5-6 9"/></symbol>
+  <symbol id="i-gift" viewBox="0 0 24 24"><rect x="4" y="9" width="16" height="11" rx="1"/><path d="M4 13h16M12 9v11"/><path d="M12 9c-2-4-6-4-6-1s6 1 6 1c2-4 6-4 6-1s-6 1-6 1"/></symbol>
+  <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.5"/></symbol>
+  <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
+</svg>
+
+<div class="app">
+
+<div class="ctl" role="group" aria-label="見比べの切り替え">
+  <h1>UTATANE 重点6画面 見た目の試作</h1>
+  <div class="grp"><span class="gl">Teal</span>
+    <label class="chip" for="teal-a"><span class="sw-dot" style="background:#0E9F90"></span>案A 明るい・鮮やか</label>
+    <label class="chip" for="teal-b"><span class="sw-dot" style="background:#0A7C74"></span>案B 深め</label>
+    <label class="chip" for="teal-c"><span class="sw-dot" style="background:#3F7F7A"></span>案C 落ち着いた・くすみ</label>
+  </div>
+  <div class="grp"><span class="gl">文字</span>
+    <label class="chip" for="type-1">案1 見出しゴシック・本文15</label>
+    <label class="chip" for="type-2">案2 見出し明朝・本文16</label>
+  </div>
+  <div class="grp"><span class="gl">幅</span>
+    <label class="chip" for="w-sp">スマホ（主）</label>
+    <label class="chip" for="w-pc">PC</label>
+  </div>
+</div>
+<p class="note">並び・言葉・状態は第一群12画面ワイヤー 第2版のとおり。色と文字は見比べの候補で、まだ決めていない。書体は端末に入っているものだけを使う（外部の読み込みなし）。画面の中の題名・人の名前は見本。</p>
+
+<div class="stage">
+
+<!-- ================= W1 ホーム ================= -->
+<section class="frame" aria-labelledby="f1">
+  <h2 class="flabel" id="f1">1. ホーム <small>W1</small></h2>
+  <div class="dev">
+    <div class="top"><span class="logo">UTATANE</span><span class="right"><button class="ibtn" type="button"><svg class="i"><use href="#i-point"/></svg>TYポイント</button><button class="ibtn" type="button" aria-label="通知"><svg class="i"><use href="#i-bell"/></svg></button></span></div>
+    <nav class="rail" aria-label="メニュー"><span class="logo">UTATANE</span><a class="on" href="#f1"><svg class="i"><use href="#i-home"/></svg>ホーム</a><a href="#f1"><svg class="i"><use href="#i-plus"/></svg>つくる</a><a href="#f1"><svg class="i"><use href="#i-inbox"/></svg>対応待ち <span class="badge">1</span></a><a href="#f1"><svg class="i"><use href="#i-bell"/></svg>通知</a><a href="#f1"><svg class="i"><use href="#i-user"/></svg>自分</a><a href="#f1"><svg class="i"><use href="#i-point"/></svg>TYポイント<svg class="i s"><use href="#i-ext"/></svg></a></nav>
+    <main class="scr">
+      <h3 class="h" style="margin-top:0">🌱 種</h3>
+      <div class="hscroll">
+        <div class="card"><div class="jk"><svg class="i l"><use href="#i-pen"/></svg></div><b>夜明けのうた</b><span class="sub">あさひ</span><button class="mini" type="button"><svg class="i s"><use href="#i-play"/></svg>再生</button></div>
+        <div class="card"><div class="jk"><svg class="i l"><use href="#i-mic"/></svg></div><b>港の灯り</b><span class="sub">そら</span><button class="mini" type="button"><svg class="i s"><use href="#i-play"/></svg>再生</button></div>
+        <div class="card"><div class="jk"><svg class="i l"><use href="#i-note"/></svg></div><b>坂の上の風</b><span class="sub">ひなた</span><button class="mini" type="button"><svg class="i s"><use href="#i-play"/></svg>再生</button></div>
+      </div>
+      <h3 class="h">🎤 ボーカル待ち</h3>
+      <div class="row"><div class="jk"><svg class="i"><use href="#i-mic"/></svg></div><div class="t"><b>雨のあとで</b><span class="sub">ボーカルを募集中</span></div><button class="mini" type="button">見る</button></div>
+      <h3 class="h">🎸 参加できる曲</h3>
+      <div class="row"><div class="jk"><svg class="i"><use href="#i-wave"/></svg></div><div class="t"><b>春の駅</b><span class="sub">つばさ</span></div><button class="mini" type="button"><svg class="i s"><use href="#i-play"/></svg>再生</button></div>
+      <h3 class="h">🌳 枝分かれ</h3>
+      <div class="row"><div class="jk"><svg class="i"><use href="#i-branch"/></svg></div><div class="t"><b>夜明けのうた（弾き語り）</b><span class="sub">みなと</span></div><button class="mini" type="button"><svg class="i s"><use href="#i-play"/></svg>再生</button></div>
+      <h3 class="h">✨ 新しい Version</h3>
+      <div class="row"><div class="jk"><svg class="i"><use href="#i-note"/></svg></div><div class="t"><b>港の灯り</b><span class="sub">そら ほか</span></div><button class="mini" type="button"><svg class="i s"><use href="#i-play"/></svg>再生</button></div>
+    </main>
+    <aside class="panel"><h3 class="h" style="margin-top:0">いま鳴っている歌</h3><p style="margin:4px 0">夜明けのうた<br><span class="sub">あさひ</span></p><button class="btn primary" type="button"><svg class="i"><use href="#i-gift"/></svg>ありがとうを贈る</button><button class="btn" type="button"><svg class="i"><use href="#i-tree"/></svg>この歌が生まれた流れ</button></aside>
+    <div class="player"><svg class="i" style="color:var(--teal)"><use href="#i-note"/></svg><div class="pt"><b>夜明けのうた</b><span>あさひ</span></div><button class="pbtn" type="button"><svg class="i s"><use href="#i-pause"/></svg>停止</button></div>
+    <nav class="tabs" aria-label="下のタブ"><span class="tab on"><svg class="i"><use href="#i-home"/></svg>ホーム</span><span class="tab"><svg class="i"><use href="#i-plus"/></svg>＋つくる</span><span class="tab"><svg class="i"><use href="#i-inbox"/></svg>対応待ち <span class="badge">1</span></span><span class="tab"><svg class="i"><use href="#i-user"/></svg>自分</span></nav>
+  </div>
+  <div class="states"><b class="lab">状態（第2版 W1）</b><ul>
+    <li><span class="k">空</span><span>まだ歌がありません。最初の一粒をつくりませんか <button class="mini" type="button">つくる</button></span></li>
+    <li><span class="k">読み込み中</span><span><span class="skel"></span>（段ごとに枠だけ・再生バーは止めない）</span></li>
+    <li><span class="k">できない理由</span><span class="st"><svg class="i s"><use href="#i-info"/></svg>読み込めませんでした</span> <button class="mini" type="button">もう一度</button></li>
+    <li><span class="k">完了</span><span class="sub">なし（一覧の画面）</span></li>
+  </ul></div>
+</section>
+
+<!-- ================= W2 歌の画面 ================= -->
+<section class="frame" aria-labelledby="f2">
+  <h2 class="flabel" id="f2">2. 歌の画面 <small>W2・Version 詳細</small></h2>
+  <div class="dev">
+    <div class="top"><span class="logo">UTATANE</span><span class="right"><button class="ibtn" type="button"><svg class="i"><use href="#i-point"/></svg>TYポイント</button><button class="ibtn" type="button" aria-label="通知"><svg class="i"><use href="#i-bell"/></svg></button></span></div>
+    <nav class="rail" aria-label="メニュー"><span class="logo">UTATANE</span><a class="on" href="#f2"><svg class="i"><use href="#i-home"/></svg>ホーム</a><a href="#f2"><svg class="i"><use href="#i-plus"/></svg>つくる</a><a href="#f2"><svg class="i"><use href="#i-inbox"/></svg>対応待ち <span class="badge">1</span></a><a href="#f2"><svg class="i"><use href="#i-bell"/></svg>通知</a><a href="#f2"><svg class="i"><use href="#i-user"/></svg>自分</a><a href="#f2"><svg class="i"><use href="#i-point"/></svg>TYポイント<svg class="i s"><use href="#i-ext"/></svg></a></nav>
+    <main class="scr">
+      <div class="jk xl"><svg class="i l" style="width:56px;height:56px"><use href="#i-note"/></svg></div>
+      <div class="head-row" style="margin-top:10px"><div><h2 class="h">港の灯り</h2><span class="sub">そら ほか3人</span></div><button class="ibtn" type="button" aria-label="その他の操作"><svg class="i"><use href="#i-more"/></svg></button></div>
+      <button class="btn" type="button"><svg class="i"><use href="#i-play"/></svg>再生</button>
+      <button class="btn primary" type="button"><svg class="i"><use href="#i-gift"/></svg>ありがとうを贈る</button>
+      <div class="acts"><button class="mini" type="button"><svg class="i s"><use href="#i-heart"/></svg>好き</button><button class="mini" type="button"><svg class="i s"><use href="#i-later"/></svg>あとで聴く</button></div>
+      <h3 class="h">この作品について</h3>
+      <p style="margin:0">港町の夜を歌った歌です。</p>
+      <a class="link" href="#f2">履歴を見る</a>
+      <h3 class="h">この歌をつくった人</h3>
+      <div class="row"><svg class="i" style="color:var(--teal)"><use href="#i-pen"/></svg><div class="t">あさひさん　<span class="sub">歌詞</span></div></div>
+      <div class="row"><svg class="i" style="color:var(--teal)"><use href="#i-mic"/></svg><div class="t">そらさん　<span class="sub">ボーカル</span></div></div>
+      <div class="row"><svg class="i" style="color:var(--teal)"><use href="#i-wave"/></svg><div class="t">つばささん　<span class="sub">ギター</span></div></div>
+      <button class="btn" type="button"><svg class="i"><use href="#i-mic"/></svg>この曲に参加する</button>
+      <button class="btn" type="button"><svg class="i"><use href="#i-branch"/></svg>新しい Version として育てる</button>
+      <button class="btn ghost" type="button"><svg class="i"><use href="#i-tree"/></svg>この歌が生まれた流れ</button>
+      <h3 class="h">ほかの人に使ってもらう時の希望</h3>
+      <p style="margin:0">お願いがあれば使えます</p>
+    </main>
+    <aside class="panel"><h3 class="h" style="margin-top:0">ありがとうを贈る</h3><p class="sub" style="margin:4px 0 8px">右のパネルで、そのまま開きます（W7）。</p><button class="btn primary" type="button"><svg class="i"><use href="#i-gift"/></svg>ありがとうを贈る</button><h3 class="h">この歌の森</h3><div class="tree"><div class="row"><div class="t"><b>夜明けのうた</b><span class="sub">歌詞から</span></div></div><div class="row"><div class="t"><b>港の灯り</b><span class="sub">いまの歌</span></div></div></div></aside>
+    <div class="player"><svg class="i" style="color:var(--teal)"><use href="#i-note"/></svg><div class="pt"><b>港の灯り</b><span>そら ほか3人</span></div><button class="pbtn" type="button"><svg class="i s"><use href="#i-pause"/></svg>停止</button></div>
+    <nav class="tabs" aria-label="下のタブ"><span class="tab on"><svg class="i"><use href="#i-home"/></svg>ホーム</span><span class="tab"><svg class="i"><use href="#i-plus"/></svg>＋つくる</span><span class="tab"><svg class="i"><use href="#i-inbox"/></svg>対応待ち <span class="badge">1</span></span><span class="tab"><svg class="i"><use href="#i-user"/></svg>自分</span></nav>
+  </div>
+  <div class="states"><b class="lab">状態（第2版 W2）</b><ul>
+    <li><span class="k">読み込み中</span><span>①ジャケット・題名と②再生を先に出す <span class="skel"></span></span></li>
+    <li><span class="k">できない理由</span><span class="why" style="margin:0"><svg class="i s"><use href="#i-info"/></svg>あなたもこの歌の届け先に入っているため、ありがとうは贈れません</span></li>
+    <li><span class="k">できない理由</span><span class="st"><svg class="i s"><use href="#i-info"/></svg>この歌はいま聴けません</span></li>
+    <li><span class="k">完了</span><span class="st done"><svg class="i s"><use href="#i-heart"/></svg>好き（印が変わるだけ）</span></li>
+  </ul></div>
+</section>
+
+<!-- ================= W6 この歌が生まれた流れ ================= -->
+<section class="frame" aria-labelledby="f3">
+  <h2 class="flabel" id="f3">3. この歌が生まれた流れ <small>W6・Version Tree</small></h2>
+  <div class="dev">
+    <div class="top"><span class="logo">UTATANE</span><span class="right"><button class="ibtn" type="button"><svg class="i"><use href="#i-point"/></svg>TYポイント</button><button class="ibtn" type="button" aria-label="通知"><svg class="i"><use href="#i-bell"/></svg></button></span></div>
+    <nav class="rail" aria-label="メニュー"><span class="logo">UTATANE</span><a class="on" href="#f3"><svg class="i"><use href="#i-home"/></svg>ホーム</a><a href="#f3"><svg class="i"><use href="#i-plus"/></svg>つくる</a><a href="#f3"><svg class="i"><use href="#i-inbox"/></svg>対応待ち <span class="badge">1</span></a><a href="#f3"><svg class="i"><use href="#i-bell"/></svg>通知</a><a href="#f3"><svg class="i"><use href="#i-user"/></svg>自分</a><a href="#f3"><svg class="i"><use href="#i-point"/></svg>TYポイント<svg class="i s"><use href="#i-ext"/></svg></a></nav>
+    <main class="scr">
+      <h2 class="h">この歌が生まれた流れ</h2>
+      <h3 class="h">この歌が受け継いだ物</h3>
+      <div class="tree">
+        <div class="row"><svg class="i" style="color:var(--teal)"><use href="#i-pen"/></svg><div class="t">あさひさんの歌詞から</div></div>
+        <div class="row"><svg class="i" style="color:var(--teal)"><use href="#i-branch"/></svg><div class="t">「夜明けのうた」の歌から育った</div></div>
+        <button class="mini" type="button" style="margin:6px 0">もっと前へ</button>
+      </div>
+      <div class="now"><span class="mark"><svg class="i s"><use href="#i-note"/></svg>いまの歌</span><div style="margin-top:6px"><b>港の灯り</b><br><span class="sub">そら ほか3人</span></div></div>
+      <h3 class="h">この歌から生まれた歌</h3>
+      <div class="tree">
+        <div class="row"><div class="jk"><svg class="i"><use href="#i-mic"/></svg></div><div class="t"><b>港の灯り（ふたりで）</b><span class="sub">ボーカルを受け継いだ</span></div></div>
+        <div class="row"><div class="jk"><svg class="i"><use href="#i-wave"/></svg></div><div class="t"><b>灯り、ふたたび</b><span class="sub">ギターを受け継いだ</span></div></div>
+        <div class="row"><div class="jk" style="background:#E4E8E6;color:#5B6664"><svg class="i"><use href="#i-info"/></svg></div><div class="t"><span class="st muted">いまは見られない歌</span></div></div>
+      </div>
+    </main>
+    <aside class="panel"><h3 class="h" style="margin-top:0">選んだ歌</h3><p style="margin:4px 0"><b>灯り、ふたたび</b><br><span class="sub">ギターを受け継いだ</span></p><button class="btn" type="button"><svg class="i"><use href="#i-play"/></svg>再生</button><p class="sub pc-only">PC では中央を網の図にする（上下・優劣を付けない）。この試作は並びの確認のため、スマホと同じ行で描いた。</p></aside>
+    <div class="player"><svg class="i" style="color:var(--teal)"><use href="#i-note"/></svg><div class="pt"><b>港の灯り</b><span>そら ほか3人</span></div><button class="pbtn" type="button"><svg class="i s"><use href="#i-pause"/></svg>停止</button></div>
+    <nav class="tabs" aria-label="下のタブ"><span class="tab on"><svg class="i"><use href="#i-home"/></svg>ホーム</span><span class="tab"><svg class="i"><use href="#i-plus"/></svg>＋つくる</span><span class="tab"><svg class="i"><use href="#i-inbox"/></svg>対応待ち <span class="badge">1</span></span><span class="tab"><svg class="i"><use href="#i-user"/></svg>自分</span></nav>
+  </div>
+  <div class="states"><b class="lab">状態（第2版 W6）</b><ul>
+    <li><span class="k">空</span><span>この歌から生まれた歌は、まだありません。 <button class="mini" type="button">新しい Version として育てる</button></span></li>
+    <li><span class="k">読み込み中</span><span>いまの歌だけ先に出す <span class="skel"></span></span></li>
+    <li><span class="k">できない理由</span><span class="st muted">いまは見られない歌</span><span class="sub">（線は消さない）</span></li>
+    <li><span class="k">完了</span><span class="sub">なし</span></li>
+  </ul></div>
+</section>
+
+<!-- ================= W4 参加（参加者から見た形） ================= -->
+<section class="frame" aria-labelledby="f4">
+  <h2 class="flabel" id="f4">4. 参加している歌 <small>W4・参加者から見た形</small></h2>
+  <div class="dev">
+    <div class="top"><span class="logo">UTATANE</span><span class="right"><button class="ibtn" type="button"><svg class="i"><use href="#i-point"/></svg>TYポイント</button><button class="ibtn" type="button" aria-label="通知"><svg class="i"><use href="#i-bell"/></svg></button></span></div>
+    <nav class="rail" aria-label="メニュー"><span class="logo">UTATANE</span><a href="#f4"><svg class="i"><use href="#i-home"/></svg>ホーム</a><a href="#f4"><svg class="i"><use href="#i-plus"/></svg>つくる</a><a class="on" href="#f4"><svg class="i"><use href="#i-inbox"/></svg>対応待ち <span class="badge">1</span></a><a href="#f4"><svg class="i"><use href="#i-bell"/></svg>通知</a><a href="#f4"><svg class="i"><use href="#i-user"/></svg>自分</a><a href="#f4"><svg class="i"><use href="#i-point"/></svg>TYポイント<svg class="i s"><use href="#i-ext"/></svg></a></nav>
+    <main class="scr">
+      <h2 class="h">雨のあとで</h2>
+      <span class="mark"><svg class="i s"><use href="#i-mic"/></svg>そらさんの制作に参加中</span>
+      <h3 class="h">代表の音</h3>
+      <div class="wave" aria-hidden="true"></div>
+      <button class="mini" type="button"><svg class="i s"><use href="#i-play"/></svg>再生</button>
+      <h3 class="h">あなたのパート</h3>
+      <div class="block"><b>ボーカル（サビのハモり）</b><br><span class="sub">募集の中身</span><div class="acts" style="margin-top:8px"><a class="link" href="#f4">参加の手引き</a></div><button class="mini" type="button"><svg class="i s"><use href="#i-down"/></svg>素材を受け取る</button></div>
+      <button class="btn primary" type="button"><svg class="i"><use href="#i-send"/></svg>歌を送る</button>
+      <h3 class="h">あなたが送った物</h3>
+      <div class="row"><div class="t"><b>ハモり 1回目</b><span class="st"><svg class="i s"><use href="#i-clock"/></svg>送った歌（まだ入っていません）</span></div></div>
+      <div class="row"><div class="t"><b>ハモり 2回目</b><span class="st done"><svg class="i s"><use href="#i-check"/></svg>この歌に入りました</span></div></div>
+      <div class="row"><div class="t"><b>ハモり 別案</b><span class="st muted">今回は見送られました</span></div></div>
+    </main>
+    <aside class="panel"><h3 class="h" style="margin-top:0">送られた歌の試聴</h3><div class="wave" aria-hidden="true"></div><button class="mini" type="button"><svg class="i s"><use href="#i-play"/></svg>再生</button></aside>
+    <div class="player"><svg class="i" style="color:var(--teal)"><use href="#i-note"/></svg><div class="pt"><b>雨のあとで（制作中）</b><span>代表の音</span></div><button class="pbtn" type="button"><svg class="i s"><use href="#i-pause"/></svg>停止</button></div>
+    <nav class="tabs" aria-label="下のタブ"><span class="tab"><svg class="i"><use href="#i-home"/></svg>ホーム</span><span class="tab"><svg class="i"><use href="#i-plus"/></svg>＋つくる</span><span class="tab on"><svg class="i"><use href="#i-inbox"/></svg>対応待ち <span class="badge">1</span></span><span class="tab"><svg class="i"><use href="#i-user"/></svg>自分</span></nav>
+  </div>
+  <div class="states"><b class="lab">状態（第2版 W4）</b><ul>
+    <li><span class="k">読み込み中</span><span>一覧の枠だけ出す <span class="skel"></span></span></li>
+    <li><span class="k">できない理由</span><span class="sub">参加者には採否のボタンを出さない</span></li>
+    <li><span class="k">完了</span><span class="st done"><svg class="i s"><use href="#i-check"/></svg>送りました</span></li>
+    <li><span class="k">完了</span><span class="st done"><svg class="i s"><use href="#i-check"/></svg>この歌に入りました</span> <span class="st muted">今回は見送られました</span></li>
+  </ul></div>
+</section>
+
+<!-- ================= W7→W8→W9 TYP を贈る ================= -->
+<section class="frame" aria-labelledby="f5">
+  <h2 class="flabel" id="f5">5. ありがとうを贈る <small>W7 → W8 → W9・UTATANE のシート（PC は右のパネルに同じ並び）</small></h2>
+  <div class="seq">
+    <div class="dev sheetdev">
+      <div class="top"><span class="logo">UTATANE</span><span class="right"><button class="ibtn" type="button"><svg class="i"><use href="#i-point"/></svg>TYポイント</button><button class="ibtn" type="button" aria-label="通知"><svg class="i"><use href="#i-bell"/></svg></button></span></div>
+      <div class="dim"><div class="ghost-title">港の灯り（歌の画面）</div>
+        <div class="sheet" role="dialog" aria-label="ありがとうを贈る">
+          <div class="grab"></div>
+          <h2 class="h" style="font-size:calc(var(--head-size) - 2px)">港の灯りに関わった人へ、ありがとうを贈ります</h2>
+          <div class="amounts" role="group" aria-label="量"><button class="amt" type="button">〇〇 TYP</button><button class="amt sel" type="button">〇〇 TYP</button><button class="amt" type="button">〇〇 TYP</button><button class="amt" type="button">その他</button></div>
+          <p class="sub" style="margin:0 0 4px">量の候補は中央の設定から読む（数は固定しない）</p>
+          <div class="bal"><div>あなたの TYP<br><b>〇〇 TYP</b> <span class="sub">（13時05分 時点）</span></div><button class="mini" type="button"><svg class="i s"><use href="#i-refresh"/></svg>更新</button></div>
+          <a class="link" href="#f5" style="font-size:13px">TYポイントで見る <svg class="i s"><use href="#i-ext"/></svg></a>
+          <button class="btn primary" type="button">確認へ</button>
+        </div>
+      </div>
+      <div class="player"><svg class="i" style="color:var(--teal)"><use href="#i-note"/></svg><div class="pt"><b>港の灯り</b><span>そら ほか3人</span></div><button class="pbtn" type="button"><svg class="i s"><use href="#i-pause"/></svg>停止</button></div>
+      <nav class="tabs" aria-label="下のタブ"><span class="tab on"><svg class="i"><use href="#i-home"/></svg>ホーム</span><span class="tab"><svg class="i"><use href="#i-plus"/></svg>＋つくる</span><span class="tab"><svg class="i"><use href="#i-inbox"/></svg>対応待ち <span class="badge">1</span></span><span class="tab"><svg class="i"><use href="#i-user"/></svg>自分</span></nav>
+    </div>
+    <div class="dev sheetdev">
+      <div class="top"><span class="logo">UTATANE</span><span class="right"><button class="ibtn" type="button"><svg class="i"><use href="#i-point"/></svg>TYポイント</button><button class="ibtn" type="button" aria-label="通知"><svg class="i"><use href="#i-bell"/></svg></button></span></div>
+      <div class="dim"><div class="ghost-title">港の灯り（歌の画面）</div>
+        <div class="sheet" role="dialog" aria-label="贈る前の確認">
+          <div class="grab"></div>
+          <h2 class="h" style="font-size:calc(var(--head-size) - 2px)">贈る前の確認</h2>
+          <dl class="kv"><dt>贈る先</dt><dd>港の灯り</dd><dt>量</dt><dd>〇〇 TYP</dd><dt>届く人</dt><dd style="font-weight:400">この歌に関わった4人に、決めてある分け方で届きます</dd></dl>
+          <a class="link" href="#f5" style="font-size:14px">届く人を見る</a>
+          <div class="why"><svg class="i s"><use href="#i-info"/></svg>贈ったあとで取り消すことはできません</div>
+          <button class="btn primary" type="button"><svg class="i"><use href="#i-gift"/></svg>贈る</button>
+          <button class="btn ghost" type="button">戻る</button>
+        </div>
+      </div>
+      <div class="player"><svg class="i" style="color:var(--teal)"><use href="#i-note"/></svg><div class="pt"><b>港の灯り</b><span>そら ほか3人</span></div><button class="pbtn" type="button"><svg class="i s"><use href="#i-pause"/></svg>停止</button></div>
+      <nav class="tabs" aria-label="下のタブ"><span class="tab on"><svg class="i"><use href="#i-home"/></svg>ホーム</span><span class="tab"><svg class="i"><use href="#i-plus"/></svg>＋つくる</span><span class="tab"><svg class="i"><use href="#i-inbox"/></svg>対応待ち <span class="badge">1</span></span><span class="tab"><svg class="i"><use href="#i-user"/></svg>自分</span></nav>
+    </div>
+    <div class="dev sheetdev">
+      <div class="top"><span class="logo">UTATANE</span><span class="right"><button class="ibtn" type="button"><svg class="i"><use href="#i-point"/></svg>TYポイント</button><button class="ibtn" type="button" aria-label="通知"><svg class="i"><use href="#i-bell"/></svg></button></span></div>
+      <div class="dim"><div class="ghost-title">港の灯り（歌の画面）</div>
+        <div class="sheet" role="dialog" aria-label="結果">
+          <div class="grab"></div>
+          <div class="big-ok" role="status"><span class="ring"><svg class="i l"><use href="#i-check"/></svg></span><h2 class="h">ありがとうを届けました</h2></div>
+          <button class="btn primary" type="button">閉じる</button>
+          <button class="btn ghost" type="button">履歴を見る <svg class="i s"><use href="#i-ext"/></svg></button>
+        </div>
+      </div>
+      <div class="player"><svg class="i" style="color:var(--teal)"><use href="#i-note"/></svg><div class="pt"><b>港の灯り</b><span>そら ほか3人</span></div><button class="pbtn" type="button"><svg class="i s"><use href="#i-pause"/></svg>停止</button></div>
+      <nav class="tabs" aria-label="下のタブ"><span class="tab on"><svg class="i"><use href="#i-home"/></svg>ホーム</span><span class="tab"><svg class="i"><use href="#i-plus"/></svg>＋つくる</span><span class="tab"><svg class="i"><use href="#i-inbox"/></svg>対応待ち <span class="badge">1</span></span><span class="tab"><svg class="i"><use href="#i-user"/></svg>自分</span></nav>
+    </div>
+  </div>
+  <div class="states" style="width:1112px"><b class="lab">状態（第2版 W7〜W9）</b><ul>
+    <li><span class="k">W7 空</span><span><button class="btn small" type="button" disabled>確認へ</button> 量を選んでください</span></li>
+    <li><span class="k">W7 読み込み中</span><span>あなたの TYP：確かめています（前の数字は出さない）</span></li>
+    <li><span class="k">W7 できない理由</span><span class="st"><svg class="i s"><use href="#i-info"/></svg>TYP が足りません</span> <span class="st"><svg class="i s"><use href="#i-info"/></svg>1回に贈れるのは設定の上限までです</span> <span class="st"><svg class="i s"><use href="#i-clock"/></svg>前のありがとうの結果を確認しています</span></li>
+    <li><span class="k">W8 読み込み中</span><span><button class="btn small" type="button" disabled>送っています</button>（もう押せない）</span></li>
+    <li><span class="k">W9 状態</span><span class="st done"><svg class="i s"><use href="#i-check"/></svg>ありがとうを届けました</span> <span class="st"><svg class="i s"><use href="#i-clock"/></svg>結果を確認しています</span> <span class="st muted">贈れませんでした・TYP は減っていません</span></li>
+    <li><span class="k">Y4</span><span class="sub">受け取れない方がいる贈与の額は判断待ち（TYP の現場で決める）。この試作では描いていない。</span></li>
+  </ul></div>
+</section>
+
+<!-- ================= プロフィール（M9 チャンネル） ================= -->
+<section class="frame" aria-labelledby="f6">
+  <h2 class="flabel" id="f6">6. プロフィール <small>M9 チャンネル（第2版に無い・確定済みの中身だけ）</small></h2>
+  <div class="dev">
+    <div class="top"><span class="logo">UTATANE</span><span class="right"><button class="ibtn" type="button"><svg class="i"><use href="#i-point"/></svg>TYポイント</button><button class="ibtn" type="button" aria-label="通知"><svg class="i"><use href="#i-bell"/></svg></button></span></div>
+    <nav class="rail" aria-label="メニュー"><span class="logo">UTATANE</span><a href="#f6"><svg class="i"><use href="#i-home"/></svg>ホーム</a><a href="#f6"><svg class="i"><use href="#i-plus"/></svg>つくる</a><a href="#f6"><svg class="i"><use href="#i-inbox"/></svg>対応待ち <span class="badge">1</span></a><a href="#f6"><svg class="i"><use href="#i-bell"/></svg>通知</a><a href="#f6"><svg class="i"><use href="#i-user"/></svg>自分</a><a href="#f6"><svg class="i"><use href="#i-point"/></svg>TYポイント<svg class="i s"><use href="#i-ext"/></svg></a></nav>
+    <main class="scr">
+      <div style="display:flex;align-items:center;gap:12px"><div style="width:64px;height:64px;border-radius:50%;background:var(--tint);border:2px solid var(--teal);display:flex;align-items:center;justify-content:center;font-family:var(--font-head);font-weight:var(--head-weight);font-size:26px">そ</div><div><h2 class="h">そら</h2><div class="acts" style="margin:4px 0 0"><span class="mark"><svg class="i s"><use href="#i-mic"/></svg>ボーカル</span><span class="mark"><svg class="i s"><use href="#i-pen"/></svg>歌詞</span></div></div></div>
+      <h3 class="h">つくった歌</h3>
+      <div class="row"><div class="jk"><svg class="i"><use href="#i-note"/></svg></div><div class="t"><b>港の灯り</b><span class="sub">そら ほか3人</span></div><button class="mini" type="button"><svg class="i s"><use href="#i-play"/></svg>再生</button></div>
+      <h3 class="h">参加した歌</h3>
+      <div class="row"><div class="jk"><svg class="i"><use href="#i-wave"/></svg></div><div class="t"><b>春の駅</b><span class="mark"><svg class="i s"><use href="#i-mic"/></svg>ボーカル</span></div><button class="mini" type="button"><svg class="i s"><use href="#i-play"/></svg>再生</button></div>
+      <div class="row"><div class="jk"><svg class="i"><use href="#i-pen"/></svg></div><div class="t"><b>坂の上の風</b><span class="mark"><svg class="i s"><use href="#i-pen"/></svg>歌詞</span></div><button class="mini" type="button"><svg class="i s"><use href="#i-play"/></svg>再生</button></div>
+      <h3 class="h">貢献が使われた歌</h3>
+      <div class="row"><div class="jk"><svg class="i"><use href="#i-branch"/></svg></div><div class="t"><b>港の灯り（ふたりで）</b><span class="mark"><svg class="i s"><use href="#i-mic"/></svg>ボーカルが使われた</span></div><button class="mini" type="button"><svg class="i s"><use href="#i-play"/></svg>再生</button></div>
+    </main>
+    <aside class="panel"><h3 class="h" style="margin-top:0">このページに置かない物</h3><p class="sub" style="margin:4px 0">TYポイント・TYP の残高と入口、人宛てに贈る操作、お金・購入・円の報酬・精算・加盟店、フォロー（Phase2）。</p></aside>
+    <div class="player"><svg class="i" style="color:var(--teal)"><use href="#i-note"/></svg><div class="pt"><b>港の灯り</b><span>そら ほか3人</span></div><button class="pbtn" type="button"><svg class="i s"><use href="#i-pause"/></svg>停止</button></div>
+    <nav class="tabs" aria-label="下のタブ"><span class="tab"><svg class="i"><use href="#i-home"/></svg>ホーム</span><span class="tab"><svg class="i"><use href="#i-plus"/></svg>＋つくる</span><span class="tab"><svg class="i"><use href="#i-inbox"/></svg>対応待ち <span class="badge">1</span></span><span class="tab"><svg class="i"><use href="#i-user"/></svg>自分</span></nav>
+  </div>
+  <div class="states"><b class="lab">状態（第2版には無い。ほかの画面の決まりに合わせた見本）</b><ul>
+    <li><span class="k">空</span><span class="sub">段に歌が無いときは、その段を出さない</span></li>
+    <li><span class="k">読み込み中</span><span>段ごとに枠だけ出す <span class="skel"></span></span></li>
+    <li><span class="k">できない理由</span><span class="st"><svg class="i s"><use href="#i-info"/></svg>読み込めませんでした</span> <button class="mini" type="button">もう一度</button></li>
+    <li><span class="k">完了</span><span class="sub">なし（一覧の画面）</span></li>
+  </ul></div>
+</section>
+
+</div><!-- /stage -->
+</div><!-- /app -->
+</body>
+</html>
