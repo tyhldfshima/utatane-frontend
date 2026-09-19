@@ -51,7 +51,8 @@ export async function optionalViewer(request: Request): Promise<string | null> {
   try {
     return await getContainer().auth.verify(header)
   } catch (e) {
-    if (e instanceof AuthFailure) return null
+    // 本人が分からない・DB の設定が無い、はどちらも「見る人なし」として続ける（DB の設定が無いことは本体の口が 503 で返す）
+    if (e instanceof AuthFailure || e instanceof CoreError) return null
     throw e
   }
 }

@@ -63,6 +63,22 @@ export class MemoryRepository implements CoreRepository {
   private publication = new Map<Id, HistoryEntry<PublicationState>[]>()
   private plays: PlayRecord[] = []
   private profiles = new Map<Id, ProfileRecord>()
+  private inTransaction = false
+
+  /** まとめて書く口：始める前の中身を写しておき、途中で失敗したら写しへ戻す */
+  async transaction<T>(fn: (repo: CoreRepository) => Promise<T>): Promise<T> {
+    if (this.inTransaction) return fn(this)
+    const saved = structuredClone({ ...this, inTransaction: false })
+    this.inTransaction = true
+    try {
+      return await fn(this)
+    } catch (e) {
+      Object.assign(this, saved)
+      throw e
+    } finally {
+      this.inTransaction = false
+    }
+  }
 
   async listRoleKinds() {
     return clone(this.roleKinds)

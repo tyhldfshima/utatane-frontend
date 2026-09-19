@@ -36,6 +36,11 @@ import type {
 /** pg の Pool と PGlite のどちらでも満たせる最小の形 */
 export interface SqlClient {
   query<R = Record<string, unknown>>(text: string, params?: unknown[]): Promise<{ rows: R[] }>
+  /**
+   * まとめて書く口（1つの接続で begin → fn → commit、失敗したら rollback）。
+   * まとまりの中で渡される SqlClient には transaction が無い（入れ子は外側のまとまりに入る）。
+   */
+  transaction?<T>(fn: (tx: SqlClient) => Promise<T>): Promise<T>
 }
 
 type Row = Record<string, unknown>
@@ -47,6 +52,12 @@ const sOrNull = (v: unknown): string | null => (v === null || v === undefined ? 
 
 export class PgRepository implements CoreRepository {
   constructor(private db: SqlClient) {}
+
+  async transaction<T>(fn: (repo: CoreRepository) => Promise<T>): Promise<T> {
+    const db = this.db
+    if (!db.transaction) return fn(this) // すでにまとまりの中
+    return db.transaction((tx) => fn(new PgRepository(tx)))
+  }
 
   private async rows<R = Row>(text: string, params: unknown[] = []): Promise<R[]> {
     return (await this.db.query<R>(text, params)).rows
