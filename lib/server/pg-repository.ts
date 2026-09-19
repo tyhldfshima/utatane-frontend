@@ -3,7 +3,7 @@
 // ・表は db/migrations/0001_utatane_core_v1.sql（スキーマ utatane）。
 // ・つなぎ方は SqlClient（query だけ）。本番は pg の Pool（lib/server/pg-client.ts）、試験は PGlite。
 // ・ポイント・残高・報酬は持たない。中央の受取人 id を参照として持つだけ。
-// ★container.ts はまだ MemoryRepository のまま。切り替えは事後確認が通った後の別の便。
+// ・API の口の保存先は、container.ts でこの Postgres 版に切り替えてある（UTATANE_DATABASE_URL が無いときは 503）。
 
 import type { Recruitment } from '../domain/permissions'
 import type { PublishCheck } from '../domain/publish'
