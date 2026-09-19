@@ -1,6 +1,13 @@
 import { describe, it, expect } from 'vitest'
-import { createElement as h } from 'react'
-import { renderToStaticMarkup } from 'react-dom/server'
+import { createElement as h, type ReactElement } from 'react'
+import { createRequire } from 'node:module'
+
+// react-dom/server の型（@types/react-dom）は依存に入っていないので、型を付けて読み込む。
+// ★package.json を変えない（PR #4〜#6 と重ならないため）。
+const require = createRequire(import.meta.url)
+const { renderToStaticMarkup } = require('react-dom/server') as {
+  renderToStaticMarkup: (element: ReactElement) => string
+}
 import {
   COLORS,
   CONTRAST_PAIRS,
