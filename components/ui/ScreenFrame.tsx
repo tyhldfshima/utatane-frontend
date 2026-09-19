@@ -18,6 +18,11 @@ type Common = {
   primary?: PrimarySlot
   /** 主ボタンの下に並べる副ボタン・控えめなボタン */
   secondary?: React.ReactNode
+  /**
+   * 主ボタンより上に置く中身（歌の画面：題名・再生の次に［ありがとうを贈る］が来る並び）。
+   * 渡したときは「lead → 主ボタン → children」の順。渡さないときは「children → 主ボタン」の順。
+   */
+  lead?: React.ReactNode
   children?: React.ReactNode
 }
 
@@ -52,13 +57,14 @@ export function ScreenFrame(props: ScreenFrameProps) {
         </a>
       ) : null}
       {props.title ? <h2 className={styles.title}>{props.title}</h2> : null}
-      {props.children}
+      {props.lead !== undefined ? props.lead : props.children}
       {props.primary || props.secondary ? (
         <div className={styles.actions}>
           {props.primary ? <Primary slot={props.primary} /> : null}
           {props.secondary}
         </div>
       ) : null}
+      {props.lead !== undefined ? props.children : null}
     </section>
   )
 }

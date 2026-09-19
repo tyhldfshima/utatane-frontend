@@ -18,6 +18,9 @@ export type ConfirmDialogProps = {
   cancelLabel?: string
   onConfirm?: () => void
   onCancel?: () => void
+  /** 画面を移って確定・戻るとき（リンク） */
+  confirmHref?: string
+  cancelHref?: string
   /** 部品一覧で、画面の中にそのまま置くとき true（背景の幕を出さない） */
   inline?: boolean
 }
@@ -30,6 +33,8 @@ export function ConfirmDialog({
   cancelLabel = COPY.back,
   onConfirm,
   onCancel,
+  confirmHref,
+  cancelHref,
   inline = false,
 }: ConfirmDialogProps) {
   const titleId = useId()
@@ -39,11 +44,13 @@ export function ConfirmDialog({
     if (!open || inline) return
     headingRef.current?.focus()
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onCancel?.()
+      if (e.key !== 'Escape') return
+      if (onCancel) onCancel()
+      else if (cancelHref) window.location.assign(cancelHref)
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [open, inline, onCancel])
+  }, [open, inline, onCancel, cancelHref])
 
   if (!open) return null
   return (
@@ -60,8 +67,8 @@ export function ConfirmDialog({
           {title}
         </h2>
         <div>{body}</div>
-        <PrimaryButton label={confirmLabel} onClick={onConfirm} />
-        <GhostButton label={cancelLabel} onClick={onCancel} />
+        <PrimaryButton label={confirmLabel} onClick={onConfirm} href={confirmHref} />
+        <GhostButton label={cancelLabel} onClick={onCancel} href={cancelHref} />
       </div>
     </>
   )

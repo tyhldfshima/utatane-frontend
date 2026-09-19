@@ -150,7 +150,7 @@ describe('ありがとうを贈るの出し分け（Y4 の1つの条件）', () 
     })
     expect(giftGate({ ...base, unreceivableCount: 1, phase: 'after-acceptance' })).toEqual({
       kind: 'available',
-      note: '受け取れない方の分は送られず、あなたのポイントからも減りません',
+      note: '受け取れない方の分は送られず、あなたのTYPからも減りません',
     })
   })
   it('受け取れない方がいなければ、受入の前も後も贈れる', () => {
@@ -181,8 +181,8 @@ describe('線のアイコン', () => {
     }
   })
   it('ボタンの中のアイコンは、必ず文字と一緒に出る', () => {
-    const html = renderToStaticMarkup(h(SecondaryButton, { label: 'この曲に参加する', icon: 'join' }))
-    expect(html).toContain('この曲に参加する')
+    const html = renderToStaticMarkup(h(SecondaryButton, { label: 'この歌の制作に参加する', icon: 'join' }))
+    expect(html).toContain('この歌の制作に参加する')
     expect(html).toContain('data-icon="join"')
   })
 })

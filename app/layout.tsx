@@ -3,6 +3,7 @@ import { Providers } from './providers'
 import { NavBar } from '@/components/NavBar'
 import { AudioPlayer } from '@/components/AudioPlayer'
 import { NotificationBell } from '@/components/NotificationBell'
+import { LegacyChrome } from '@/components/LegacyChrome'
 import './globals.css'
 
 export const metadata: Metadata = {
@@ -17,12 +18,18 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="ja" suppressHydrationWarning>
       <body className="bg-white min-h-screen">
         <Providers>
-          <Header />
-          <div className="pt-14 pb-32">
+          {/* 新しい画面（/ui・/dev）は自分の枠を持つ。今までの画面の枠はそのまま（LegacyChrome）。 */}
+          <LegacyChrome
+            header={<Header />}
+            footer={
+              <>
+                <AudioPlayer />
+                <NavBar />
+              </>
+            }
+          >
             {children}
-          </div>
-          <AudioPlayer />
-          <NavBar />
+          </LegacyChrome>
         </Providers>
       </body>
     </html>
