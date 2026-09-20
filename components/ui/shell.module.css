@@ -25,7 +25,18 @@
   border-bottom: 1px solid var(--u-line);
   background: var(--u-surface);
 }
-.logo { font-weight: 700; font-size: 18px; letter-spacing: 0.04em; color: var(--u-ink); text-decoration: none; }
+/* ロゴは押せる物（文字のリンク）なので、押せる高さは 44px 以上（設計書 §2-1）。
+   文字の大きさと位置は変えず、押せる範囲だけを広げる。 */
+.logo {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--u-min-touch);
+  font-weight: 700;
+  font-size: 18px;
+  letter-spacing: 0.04em;
+  color: var(--u-ink);
+  text-decoration: none;
+}
 .topRight { display: flex; align-items: center; gap: 2px; }
 .iconLink {
   display: inline-flex;
@@ -139,7 +150,8 @@
     border-right: 1px solid var(--u-line);
     background: var(--u-surface);
   }
-  .rail .logo { padding: 4px 10px 14px; }
+  /* 左の縦メニューでは、文字は今までどおり上に置く（下の余白を押せる範囲へ回す）。 */
+  .rail .logo { align-items: flex-start; padding: 4px 10px 0; }
   .railLink {
     display: flex;
     align-items: center;
@@ -187,7 +199,10 @@
   color: var(--u-teal);
 }
 .jacketXL { width: 100%; height: 160px; border-radius: 14px; }
+/* カードはそのままリンクにすることがある（自分 → 公開プロフィール）ので、
+   押せる高さの最小（44px）を決まりとして持たせる。中身はこれより高いので見た目は変わらない。 */
 .card {
+  min-height: var(--u-min-touch);
   margin: 12px 0;
   padding: 12px;
   border: 1px solid var(--u-line);

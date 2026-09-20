@@ -55,19 +55,13 @@ export default async function ConsentPage({ params, searchParams }: { params: { 
         secondary={confirmOpen ? undefined : <GhostButton label="同意しない（主催に理由を伝える）" />}
       >
         <div data-screen="consent">
+          {/* ステップは「いまどこか」を見せる札で、押せる物ではない（設計書 §3 F・試作の f-normal）。
+              押せる物にすると、札の大きさ（13px・上下 2px）では 44px に足りない（設計書 §2-1）。 */}
           <ol className={s.steps} aria-label="ステップ">
-            <li>
-              <a href="#step-1">1 あなたの音</a>
-            </li>
-            <li>
-              <a href="#step-2">2 名前と役割</a>
-            </li>
-            <li aria-current="step">
-              <a href="#step-3">3 届け方</a>
-            </li>
-            <li>
-              <a href="#step-4">4 同意</a>
-            </li>
+            <li>1 あなたの音</li>
+            <li>2 名前と役割</li>
+            <li aria-current="step">3 届け方</li>
+            <li>4 同意</li>
           </ol>
           <h2 className={s.section} id="step-1">
             1　あなたの音
