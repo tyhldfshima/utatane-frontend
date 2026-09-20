@@ -132,7 +132,7 @@ describe('差し替え（画面を1枚も書き直さずに、中身が変わる
       return null
     },
     async getGiftSettings() {
-      return { amounts: [50], balance: 50, balanceAtLabel: '0時00分 時点' }
+      return { amounts: [50], balance: 50, balanceAtLabel: '0時00分 時点', perGiftLimit: 50 }
     },
     async listCreateOptions() {
       return [{ id: 'only', label: 'ためしの始め方', icon: 'plus', href: null, reason: 'ためし' }]
@@ -145,6 +145,9 @@ describe('差し替え（画面を1枚も書き直さずに、中身が変わる
     },
     async declareProvenance() {
       return null
+    },
+    async listMyMaterials() {
+      return []
     },
     async getPermissionAsk() {
       return null

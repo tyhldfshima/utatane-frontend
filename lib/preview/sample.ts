@@ -80,6 +80,14 @@ export type SamplePermissionRequest = {
   requestedAt: Timestamp
 }
 
+/** 自分が置いた素材（K 自分の素材の一覧）。参加の「送る」で、ここから選ぶ */
+export type SampleMyMaterial = {
+  id: Id
+  label: string
+  sizeLabel: string
+  placedAtLabel: string
+}
+
 export type SampleData = {
   viewerHolderId: Id
   /** 権利の可否をどの時点で見るか（ポリシーの版の選び方に効く） */
@@ -109,6 +117,15 @@ export type SampleData = {
   provenanceKinds: SampleProvenanceKind[]
   /** 送った「使わせてのお願い」（返事待ち）。見本の初めは空 */
   permissionRequests: SamplePermissionRequest[]
+  /** 自分が置いた素材（参加の「送る」で選ぶ） */
+  myMaterials: SampleMyMaterial[]
+  /** ありがとうの量の札・残高・1回の上限（★すべて見本の値） */
+  gift: {
+    amounts: number[]
+    balance: number
+    balanceAtLabel: string
+    perGiftLimit: number
+  }
 }
 
 // ── 人 ────────────────────────────────────────────────────
@@ -374,6 +391,24 @@ const PUBLISH_DRAFTS: SampleDraft[] = [
   { id: 'hoshi', versionId: 'v-hoshi', title: '星のかけら', deliveryReady: true, publishedSongId: null },
 ]
 
+/**
+ * ありがとうの量の札・残高・1回の上限（仮の形：本物は中央の設定と TYP の口から読む）。
+ * ★perGiftLimit（1回に贈れる上限）の値も見本。中央の制度の設定を読む口は、まだ無い（設計書 §4）。
+ */
+export const GIFT = {
+  amounts: [100, 300, 500],
+  balance: 1200,
+  balanceAtLabel: '13時05分 時点',
+  perGiftLimit: 300,
+} as const
+
+/** 自分が置いた素材（K 自分の素材）。参加の「送る」で、ここから選ぶ。 */
+const MY_MATERIALS: SampleMyMaterial[] = [
+  { id: 'f-guitar-1', label: 'ギター_1.wav', sizeLabel: '4.2 MB', placedAtLabel: '9月18日' },
+  { id: 'f-hum-1', label: '鼻歌_1.m4a', sizeLabel: '1.1 MB', placedAtLabel: '9月19日' },
+]
+
+
 // ── 送り物（採用前） ───────────────────────────────────────
 
 const SUBMISSIONS: SampleSubmission[] = [
@@ -457,6 +492,8 @@ export const SAMPLE: SampleData = {
   materialLabels: MATERIAL_LABELS,
   provenanceKinds: PROVENANCE_KINDS,
   permissionRequests: [],
+  myMaterials: MY_MATERIALS,
+  gift: { amounts: [...GIFT.amounts], balance: GIFT.balance, balanceAtLabel: GIFT.balanceAtLabel, perGiftLimit: GIFT.perGiftLimit },
 }
 
 // ── 画面の読み口（lib/ui-data）に渡す見本（決まりの外の物） ─────────
@@ -530,13 +567,6 @@ export const PROFILE = {
   created: [],
   joined: [{ title: '雨のあとで', roleLabel: 'ボーカル' }],
   usedIn: [],
-} as const
-
-/** ありがとうの量の札・残高（仮の形：本物は中央の設定と TYP の口から読む）。 */
-export const GIFT = {
-  amounts: [100, 300, 500],
-  balance: 1200,
-  balanceAtLabel: '13時05分 時点',
 } as const
 
 /** ＋つくる（何から始めますか）。進めるのは「今ある歌から育てる」だけ。 */

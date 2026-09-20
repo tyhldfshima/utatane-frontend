@@ -28,7 +28,6 @@ import {
   CONSENTS,
   CREATE_OPTIONS,
   DRAFTS,
-  GIFT,
   HOME,
   INBOX,
   ME,
@@ -41,6 +40,7 @@ import type {
   ConsentView,
   CreateOption,
   DeclareProvenanceInput,
+  MyMaterialView,
   PermissionAskItem,
   PermissionAskView,
   RequestPermissionInput,
@@ -504,7 +504,12 @@ export function createSampleSource(data: SampleData): UiDataSource {
     },
 
     async getGiftSettings(): Promise<GiftSettings> {
-      return { amounts: [...GIFT.amounts], balance: GIFT.balance, balanceAtLabel: GIFT.balanceAtLabel }
+      // ★すべて見本の値。中央の制度の設定と TYP の口は、まだ無い（設計書 §4）
+      return { ...data.gift, amounts: [...data.gift.amounts] }
+    },
+
+    async listMyMaterials(): Promise<MyMaterialView[]> {
+      return data.myMaterials.map((m) => ({ ...m }))
     },
 
     async listCreateOptions(): Promise<CreateOption[]> {
