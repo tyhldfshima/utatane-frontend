@@ -33,6 +33,9 @@ export default async function ThanksPage({ params, searchParams }: { params: { i
       <ScreenFrame back={{ href: songHref, label: '歌の画面へ' }} title={COPY.giftButton}>
         {gate.kind === 'unavailable-y4' ? (
           <StateView kind="unavailable-y4" />
+        ) : gate.kind === 'checking' ? (
+          // C 結果を確認しています（設計書 §3 C）。★［確認へ］は出さない
+          <StateView kind="checking" title={COPY.giftPending} message={COPY.giftPendingBlock} />
         ) : (
           <StateView kind="empty" message={'reason' in gate ? gate.reason : 'この歌には、いま贈れません。'} />
         )}
