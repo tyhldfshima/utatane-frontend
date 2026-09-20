@@ -4,6 +4,7 @@ import { createRequire } from 'node:module'
 import SongPage from './songs/[id]/page'
 import JoinPage from './songs/[id]/join/page'
 import GrowPage from './songs/[id]/grow/page'
+import AskPage from './songs/[id]/grow/ask/page'
 import ThanksPage from './songs/[id]/thanks/page'
 import TreePage from './songs/[id]/tree/page'
 import DraftPage from './drafts/[id]/page'
@@ -120,10 +121,10 @@ describe('新しい Version として育てる（④⑤⑥）', () => {
     expect(split.free.map((c) => c.id)).toEqual(['c-lyrics'])
     expect(split.needsApproval).toEqual([])
   })
-  it('承認が必要を選ぶと、お願い（申請）へ進む（仮の形）', async () => {
-    const html = await render(GrowPage, { params: { id: 'minato' }, searchParams: { step: 'next', take: ['c-lyrics', 'c-melody'] } })
+  it('承認が必要を選ぶと、お願いの画面へ進む', async () => {
+    const html = await render(AskPage, { params: { id: 'minato' }, searchParams: { take: ['c-lyrics', 'c-melody'] } })
+    expect(html).toContain('data-screen="ask"')
     expect(html).toContain('使わせてとお願いする')
-    expect(html).toContain('data-provisional="request"')
     expect(html).toContain('あさひさんの曲')
   })
   it('何を加えるかは大きな区分だけで、あとから足せる', async () => {
@@ -296,10 +297,11 @@ describe('育てる：受け継ぐ物は最低1つ', () => {
     expect(await render(CreatePage)).toContain('data-screen="create"')
   })
   it('承認が必要な物だけを選んだときは「お願いせずに続ける」を出さない（0件になるため）', async () => {
-    const html = await render(GrowPage, { params: { id: 'minato' }, searchParams: { step: 'next', take: 'c-melody' } })
-    expect(html).toContain('data-screen="grow-ask"')
+    const html = await render(AskPage, { params: { id: 'minato' }, searchParams: { take: 'c-melody' } })
+    expect(html).toContain('data-screen="ask"')
     expect(html).not.toContain('お願いせずに続ける')
-    const both = await render(GrowPage, { params: { id: 'minato' }, searchParams: { step: 'next', take: ['c-lyrics', 'c-melody'] } })
+    expect(html).toContain('選び直す')
+    const both = await render(AskPage, { params: { id: 'minato' }, searchParams: { take: ['c-lyrics', 'c-melody'] } })
     expect(both).toContain('お願いせずに続ける')
   })
 })

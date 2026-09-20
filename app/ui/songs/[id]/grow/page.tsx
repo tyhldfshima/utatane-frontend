@@ -1,5 +1,5 @@
 import React from 'react'
-import { notFound } from 'next/navigation'
+import { notFound, redirect } from 'next/navigation'
 import { COPY, GhostButton, Icon, ScreenFrame, StateView } from '@/components/ui'
 import s from '@/components/ui/shell.module.css'
 import { ADD_OPTIONS, NEW_WITHOUT_INHERIT_HREF, canProceedInherit, splitSelection } from '@/lib/preview/model'
@@ -38,44 +38,11 @@ export default async function GrowPage({ params, searchParams }: { params: { id:
 
   // ★0件では次へ進めない（住所で直接開いても、何を受け継ぐかへ戻す）
   if (wantsNext && canProceedInherit(chosenCount)) {
-    // 承認が必要な物を選んだとき：お願い（仮の形）
+    // ★承認が必要な物を選んだときは「使わせてとお願いする」（grow/ask）へ。
+    //   そこへは InheritForm が直接送るので、ここへ来るのは承認の要らない物だけのとき。
+    //   住所で直接来たときのために、ここでも送り先を分ける。
     if (searchParams.step === 'next' && picked.needsApproval.length > 0) {
-      const onlyApproval = picked.free.length === 0
-      return (
-        <ScreenFrame
-          back={{ href: base, label: '選び直す' }}
-          title="使わせてとお願いする"
-          primary={{
-            kind: 'action',
-            label: 'お願いを送って続ける',
-            icon: 'hand',
-            href: `${base}?step=add&take=${encodeURIComponent(takeFree)}&ask=${encodeURIComponent(takeAsk)}`,
-          }}
-          secondary={
-            onlyApproval ? (
-              // お願いをやめると受け継ぐ物が0件になる＝派生にならないので、この道は出さない
-              <GhostButton label="選び直す" href={base} />
-            ) : (
-              <GhostButton label="お願いせずに続ける" href={`${base}?step=add&take=${encodeURIComponent(takeFree)}`} />
-            )
-          }
-        >
-          <div data-screen="grow-ask" data-provisional="request">
-            <p className={s.card} role="note">
-              仮の形：お願い（申請）の画面は、UTATANE 本体のデータとつなぐ便で作ります。
-            </p>
-            <p>次の物は、作った人の承認が必要です。お願いを送り、返事が来たら使えます。</p>
-            <ul>
-              {picked.needsApproval.map((c) => (
-                <li key={c.id}>{c.label}</li>
-              ))}
-            </ul>
-            {onlyApproval ? (
-              <p className={s.sub}>選んだ物がすべて承認の要る物なので、お願いをやめると受け継ぐ物が無くなります。</p>
-            ) : null}
-          </div>
-        </ScreenFrame>
-      )
+      redirect(`${base}/ask?take=${encodeURIComponent(takeAsk)}`)
     }
 
     // 2 何を加えるか
@@ -117,5 +84,13 @@ export default async function GrowPage({ params, searchParams }: { params: { id:
       </ScreenFrame>
     )
   }
-  return <InheritForm songTitle={song.title} action={base} backHref={hrefSong(song.id)} candidates={candidates} />
+  return (
+    <InheritForm
+      songTitle={song.title}
+      action={base}
+      askAction={`${base}/ask`}
+      backHref={hrefSong(song.id)}
+      candidates={candidates}
+    />
+  )
 }

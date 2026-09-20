@@ -14,12 +14,15 @@ export const INHERIT_REQUIRED_REASON = '受け継ぐ物を1つ以上選んでく
 export function InheritForm({
   songTitle,
   action,
+  askAction,
   backHref,
   candidates,
   initialSelected = [],
 }: {
   songTitle: string
   action: string
+  /** 承認が必要な物を選んだときの送り先（使わせてとお願いする） */
+  askAction: string
   backHref: string
   candidates: InheritCandidate[]
   initialSelected?: string[]
@@ -30,6 +33,8 @@ export function InheritForm({
   const toggle = (id: string, on: boolean) =>
     setSelected((cur) => (on ? Array.from(new Set([...cur, id])) : cur.filter((x) => x !== id)))
   const ok = canProceedInherit(selected.length)
+  // ★承認が必要な物を1つでも選んだら、お願いの画面へ送る（判定は候補が持つ mode ＝ effectiveMode の結果）
+  const needsApproval = candidates.some((c) => selected.includes(c.id) && c.mode === 'approval')
 
   return (
     <ScreenFrame
@@ -48,8 +53,8 @@ export function InheritForm({
           <li>2 何を加えるか</li>
         </ol>
         <p>「{songTitle}」の一部を受け継いで、あなたが主催する新しい Version をつくります。元の歌は変わりません。</p>
-        <form id="inherit-form" method="get" action={action}>
-          <input type="hidden" name="step" value="next" />
+        <form id="inherit-form" method="get" action={needsApproval ? askAction : action} data-ask={needsApproval ? 'true' : 'false'}>
+          {needsApproval ? null : <input type="hidden" name="step" value="next" />}
           <fieldset style={{ border: 0, margin: 0, padding: 0 }}>
             <legend className={s.section}>何を受け継ぎますか？</legend>
             {candidates.map((c) => (

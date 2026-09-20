@@ -69,6 +69,17 @@ export type SampleSong = {
 /** 出どころの種類の表。種類は固定の一覧にしない＝表示名もデータで持つ（設計書 utatane-core-db-api-v1.md:60） */
 export type SampleProvenanceKind = { id: ProvenanceKind; label: string }
 
+/**
+ * 送った「使わせてのお願い」。まだ承認されていないので Permission ではない
+ * （Permission は承認が成立したときにできる＝lib/domain/types.ts の PermissionBasis）。
+ */
+export type SamplePermissionRequest = {
+  songId: Id
+  contributionId: Id
+  requestedBy: Id
+  requestedAt: Timestamp
+}
+
 export type SampleData = {
   viewerHolderId: Id
   /** 権利の可否をどの時点で見るか（ポリシーの版の選び方に効く） */
@@ -96,6 +107,8 @@ export type SampleData = {
   materialLabels: Record<Id, string>
   /** 出どころの種類の表 */
   provenanceKinds: SampleProvenanceKind[]
+  /** 送った「使わせてのお願い」（返事待ち）。見本の初めは空 */
+  permissionRequests: SamplePermissionRequest[]
 }
 
 // ── 人 ────────────────────────────────────────────────────
@@ -443,6 +456,7 @@ export const SAMPLE: SampleData = {
   publishDrafts: PUBLISH_DRAFTS,
   materialLabels: MATERIAL_LABELS,
   provenanceKinds: PROVENANCE_KINDS,
+  permissionRequests: [],
 }
 
 // ── 画面の読み口（lib/ui-data）に渡す見本（決まりの外の物） ─────────
