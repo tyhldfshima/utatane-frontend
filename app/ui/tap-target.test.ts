@@ -12,6 +12,7 @@ import TreePage from './songs/[id]/tree/page'
 import DraftPage from './drafts/[id]/page'
 import ConsentPage from './inbox/consent/[id]/page'
 import PublishPage from './drafts/[id]/publish/page'
+import DraftMaterialsPage from './drafts/[id]/materials/page'
 import InboxPage from './inbox/page'
 import MePage from './me/page'
 import ProfilePage from './me/profile/page'
@@ -176,6 +177,9 @@ const SCREENS: { name: string; html: () => Promise<string> }[] = [
   { name: '主催が公開する（小窓）', html: () => render(PublishPage, { params: { id: 'hare' }, searchParams: { confirm: '1' } }) },
   { name: '主催が公開する（エラー）', html: () => render(PublishPage, { params: { id: 'hare' }, searchParams: { state: 'error' } }) },
   { name: '主催が公開する（完了）', html: () => render(PublishPage, { params: { id: 'hare' }, searchParams: { done: '1' } }) },
+  { name: '主催が公開する（素材がまだ）', html: () => render(PublishPage, song('hoshi')) },
+  { name: '素材と元の歌（一覧）', html: () => render(DraftMaterialsPage, song('hoshi')) },
+  { name: '素材の出どころを申告する', html: () => render(DraftMaterialsPage, { params: { id: 'hoshi' }, searchParams: { material: 'm-hoshi' } }) },
 ]
 
 describe('押せる物は 44px 以上（設計書 §2-1）', () => {

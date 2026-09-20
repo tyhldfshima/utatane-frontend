@@ -141,6 +141,42 @@ export type PublishView = {
   publishedSongId: Id | null
 }
 
+// ── 素材の出どころの申告（④ 素材と元の歌） ──────────────────
+
+/** 出どころの種類の選択肢。固定の一覧にしない＝データから来る */
+export type ProvenanceKindOption = { id: string; label: string }
+
+export type DraftMaterialView = {
+  id: Id
+  label: string
+  /** 申告済みなら種類の表示名。まだなら null */
+  declaredLabel: string | null
+  /** UTATANE 内の素材から作った場合の元の素材の名前 */
+  sourceLabel: string | null
+  /** 公開の再検証で止まる理由（checkMaterials の結果）。止まらなければ null */
+  issue: string | null
+}
+
+export type DraftMaterialsView = {
+  draftId: Id
+  title: string
+  materials: DraftMaterialView[]
+  /** 選べる出どころの種類 */
+  kinds: ProvenanceKindOption[]
+  /** 「UTATANE 内の素材から」を選んだときに元にできる素材 */
+  sourceOptions: { id: Id; label: string }[]
+  /** ④ 素材と元の歌 が済んだか（checkMaterials に1件も残っていないか） */
+  done: boolean
+}
+
+export type DeclareProvenanceInput = {
+  draftId: Id
+  materialId: Id
+  kind: string
+  /** 「UTATANE 内の素材から」のときの元の素材 */
+  sourceMaterialId?: Id
+}
+
 // ── ＋つくる ─────────────────────────────────────────────
 
 export type CreateOption = {
@@ -184,4 +220,14 @@ export interface UiDataSource {
    * evaluateCoauthorConsent）の結果を、画面に出す形にして返す。無ければ null
    */
   getPublish(draftId: Id): Promise<PublishView | null>
+
+  /** ④ 素材と元の歌：その下書きが使う素材と、出どころの申告の状態。無ければ null */
+  getDraftMaterials(draftId: Id): Promise<DraftMaterialsView | null>
+
+  /**
+   * 素材の出どころを申告する。
+   * ★本物の保存は PR #4〜#6 待ち。見本の読み口では、読み口が持つ見本の中に保存する。
+   * 申告できなかったとき（下書き・素材・種類が無い）は null。
+   */
+  declareProvenance(input: DeclareProvenanceInput): Promise<DraftMaterialsView | null>
 }

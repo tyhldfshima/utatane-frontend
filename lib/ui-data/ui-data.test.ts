@@ -140,6 +140,12 @@ describe('差し替え（画面を1枚も書き直さずに、中身が変わる
     async getPublish() {
       return null
     },
+    async getDraftMaterials() {
+      return null
+    },
+    async declareProvenance() {
+      return null
+    },
   }
 
   it('ホーム・歌・自分・＋つくる・対応待ちが、差し替えた読み口の中身になる', async () => {

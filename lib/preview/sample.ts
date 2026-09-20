@@ -11,6 +11,7 @@ import type { SongView } from './model'
 import { INITIAL_PERMISSION_RULE } from '@/lib/domain/types'
 import type {
   Contribution,
+  ProvenanceKind,
   Derivation,
   Id,
   Material,
@@ -65,6 +66,9 @@ export type SampleSong = {
   gift: SongView['gift']
 }
 
+/** 出どころの種類の表。種類は固定の一覧にしない＝表示名もデータで持つ（設計書 utatane-core-db-api-v1.md:60） */
+export type SampleProvenanceKind = { id: ProvenanceKind; label: string }
+
 export type SampleData = {
   viewerHolderId: Id
   /** 権利の可否をどの時点で見るか（ポリシーの版の選び方に効く） */
@@ -88,6 +92,10 @@ export type SampleData = {
   songs: SampleSong[]
   /** 主催が公開する前の下書き（G） */
   publishDrafts: SampleDraft[]
+  /** 素材の表示名（素材の型は中央の file id しか持たないので、見せる名前はここで持つ） */
+  materialLabels: Record<Id, string>
+  /** 出どころの種類の表 */
+  provenanceKinds: SampleProvenanceKind[]
 }
 
 // ── 人 ────────────────────────────────────────────────────
@@ -154,6 +162,9 @@ const CONTRIBUTIONS: Contribution[] = [
   // 公開前の下書き「晴れの日に」（主催＝うみ）
   c('c6-melody', 'melody', ['h-umi'], 'v-hare', T_DRAFT),
   c('c6-vocal', 'vocal', ['h-sora'], 'v-hare', T_DRAFT),
+  // 公開前の下書き「星のかけら」（主催＝うみ）。同意はそろい、素材の申告だけがまだ
+  c('c7-melody', 'melody', ['h-umi'], 'v-hoshi', T_DRAFT),
+  c('c7-vocal', 'vocal', ['h-sora'], 'v-hoshi', T_DRAFT),
 ]
 
 /** 由来（子 → 親）。「港の灯り」の歌詞は「夜明けのうた」の歌詞を元にしている */
@@ -174,6 +185,13 @@ const MATERIALS: Material[] = [
     storageFileId: 'f-hare',
     embodiedContributionIds: ['c6-melody', 'c6-vocal'],
     provenance: { kind: 'self_made', declaredBy: 'h-umi', declaredAt: T_DRAFT },
+  },
+  // ★出どころの申告がまだ＝公開の再検証（checkMaterials）で止まる見本
+  {
+    id: 'm-hoshi',
+    storageFileId: 'f-hoshi',
+    embodiedContributionIds: ['c7-melody', 'c7-vocal'],
+    provenance: null,
   },
 ]
 
@@ -248,6 +266,17 @@ const VERSIONS: Version[] = [
     ],
     materialIds: ['m-hare'],
   },
+  // 公開前の下書き。同意はそろっているが、素材の出どころの申告がまだ＝④ で止まる
+  {
+    id: 'v-hoshi',
+    hostHolderId: 'h-umi',
+    publishedAt: null,
+    contributions: [
+      { contributionId: 'c7-melody', relation: 'created' },
+      { contributionId: 'c7-vocal', relation: 'created' },
+    ],
+    materialIds: ['m-hoshi'],
+  },
   // 「港の灯り」から生まれたが、いまは見られない歌（公開状態が private）
   {
     id: 'v-himitsu',
@@ -285,6 +314,8 @@ const REUSE_POLICIES: ReusePolicyVersion[] = [
   policy('c5-vocal', 'free', 'any_version', T_DRAFT),
   policy('c6-melody', 'approval', 'any_version', T_DRAFT),
   policy('c6-vocal', 'free', 'any_version', T_DRAFT),
+  policy('c7-melody', 'approval', 'any_version', T_DRAFT),
+  policy('c7-vocal', 'free', 'any_version', T_DRAFT),
 ]
 
 // ── 成立済みの許諾（使わせての承認） ───────────────────────────
@@ -304,11 +335,30 @@ const PERMISSIONS: Permission[] = [
   },
 ]
 
+// ── 出どころの種類の表 ────────────────────────────────────
+// ★設計書 utatane-core-db-api-v1.md:60 の言葉。種類は後から足せる。
+
+const PROVENANCE_KINDS: SampleProvenanceKind[] = [
+  { id: 'self_made', label: '自作' },
+  { id: 'co_made', label: '共同制作' },
+  { id: 'licensed', label: '許諾済み' },
+  { id: 'from_utatane_material', label: 'UTATANE 内の素材から' },
+  { id: 'external_material', label: '外部の素材' },
+  { id: 'includes_ai', label: 'AI を含む' },
+]
+
+const MATERIAL_LABELS: Record<Id, string> = {
+  'm-ame': '雨のあとで_1.wav',
+  'm-hare': '晴れの日に_1.wav',
+  'm-hoshi': '星のかけら_1.wav',
+}
+
 // ── 公開前の下書き（G） ────────────────────────────────────
 
 const PUBLISH_DRAFTS: SampleDraft[] = [
   { id: 'ame', versionId: 'v-ame', title: '雨のあとで', deliveryReady: true, publishedSongId: null },
   { id: 'hare', versionId: 'v-hare', title: '晴れの日に', deliveryReady: true, publishedSongId: 'hare' },
+  { id: 'hoshi', versionId: 'v-hoshi', title: '星のかけら', deliveryReady: true, publishedSongId: null },
 ]
 
 // ── 送り物（採用前） ───────────────────────────────────────
@@ -391,6 +441,8 @@ export const SAMPLE: SampleData = {
   submissions: SUBMISSIONS,
   songs: SONG_LIST,
   publishDrafts: PUBLISH_DRAFTS,
+  materialLabels: MATERIAL_LABELS,
+  provenanceKinds: PROVENANCE_KINDS,
 }
 
 // ── 画面の読み口（lib/ui-data）に渡す見本（決まりの外の物） ─────────
