@@ -2,7 +2,7 @@ import React from 'react'
 import { notFound } from 'next/navigation'
 import { GhostButton, Icon, ScreenFrame, UnavailableButton } from '@/components/ui'
 import s from '@/components/ui/shell.module.css'
-import { ADD_OPTIONS, NEW_WITHOUT_INHERIT_HREF, inheritCandidates, joinRoleText, splitSelection } from '@/lib/preview/model'
+import { ADD_OPTIONS, NEW_WITHOUT_INHERIT_HREF, joinRoleText, splitSelection } from '@/lib/preview/model'
 import { hrefSong, uiData, type SongView } from '@/lib/ui-data'
 
 // W4 制作中の歌。
@@ -58,7 +58,7 @@ export default async function DraftPage({ params, searchParams }: { params: { id
 
 function GrownDraft({ from, searchParams }: { from: SongView; searchParams: Search }) {
   // 住所に書かれた物でも、元の歌に実在し選べる物だけを数える（利用できませんは捨てる）
-  const cands = inheritCandidates(from)
+  const cands = from.inherit
   const take = splitSelection(cands, (searchParams.take ?? '').split(',')).free.map((c) => c.id)
   const asked = splitSelection(cands, (searchParams.ask ?? '').split(',')).needsApproval.map((c) => c.id)
   const add = ADD_OPTIONS.find((o) => o.id === searchParams.add)
@@ -76,10 +76,7 @@ function GrownDraft({ from, searchParams }: { from: SongView; searchParams: Sear
       </ScreenFrame>
     )
   }
-  const nameOf = (id: string) => {
-    const c = from.contributions.find((x) => x.id === id)
-    return c ? `${c.holders.map((h) => `${h.displayName}さん`).join('・')}の${c.assetLabel}` : null
-  }
+  const nameOf = (id: string) => cands.find((c) => c.id === id)?.label ?? null
   return (
     <ScreenFrame
       back={{ href: `${hrefSong(from.id)}/tree`, label: '生まれた流れへ' }}

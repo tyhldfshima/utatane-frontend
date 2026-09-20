@@ -18,12 +18,11 @@ import {
   canProceedInherit,
   creditsOf,
   creditText,
-  inheritCandidates,
   recruitmentText,
   resolveJoinRole,
   splitSelection,
 } from '@/lib/preview/model'
-import { SONGS } from '@/lib/preview/sample'
+import { sampleSource, type SongView } from '@/lib/ui-data'
 import { COPY, INQUIRY_STORAGE_KEY, startInquiry, takeInquiry } from '@/components/ui'
 import { isNewUiPath } from '@/components/LegacyChrome'
 
@@ -39,10 +38,13 @@ const render = async (C: (props: never) => unknown, props: Record<string, unknow
 }
 const count = (html: string, needle: string) => html.split(needle).length - 1
 const song = (id: string) => ({ params: { id }, searchParams: {} })
+// ★画面と同じ読み口から取る（試験も見本のデータを直に読まない）
+const view = async (id: string): Promise<SongView> => (await sampleSource.getSong(id)) as SongView
+const SONG_IDS = ['minato', 'futatabi', 'futari', 'yoake']
 
 describe('この歌をつくった人（えふさん確定 ①）', () => {
   it('採用され表示対象の人が、全員・役割付きで出る（同じ人は1行にまとめる）', async () => {
-    const lines = creditsOf(SONGS.minato.contributions).map(creditText)
+    const lines = (await view('minato')).credits.map(creditText)
     expect(lines).toEqual(['あさひさん　歌詞・作曲', 'みなとさん　ボーカル', 'つばささん　ギター', 'りくさん　MIX'])
     const html = await render(SongPage, song('minato'))
     for (const l of lines) expect(html).toContain(l)
@@ -51,10 +53,10 @@ describe('この歌をつくった人（えふさん確定 ①）', () => {
     expect(await render(SongPage, song('minato'))).not.toContain('ひなたさん')
   })
   it('人を足さない：歌詞だけの種には、歌詞の人だけが出る（作曲の人を作らない）', async () => {
-    expect(creditsOf(SONGS.yoake.contributions).map(creditText)).toEqual(['ひなたさん　歌詞'])
+    expect((await view('yoake')).credits.map(creditText)).toEqual(['ひなたさん　歌詞'])
   })
   it('表示対象から外れた貢献は出さない', async () => {
-    const hidden = SONGS.minato.contributions.map((c) => (c.id === 'c-mix' ? { ...c, visible: false } : c))
+    const hidden = (await view('minato')).contributions.map((c) => (c.id === 'c-mix' ? { ...c, visible: false } : c))
     expect(creditsOf(hidden).map((l) => l.name)).not.toContain('りく')
   })
 })
@@ -68,11 +70,11 @@ describe('この歌の制作に参加する（②③）', () => {
     expect(html).toContain('募集中：ギター・コーラス')
   })
   it('募集がないとき参加のカードが出ない', async () => {
-    expect(recruitmentText(SONGS.futatabi.recruitment)).toBeNull()
+    expect(recruitmentText((await view('futatabi')).recruitment)).toBeNull()
     expect(await render(SongPage, song('futatabi'))).not.toContain('data-part="join-card"')
   })
   it('「この曲に参加する」は使わない', async () => {
-    for (const id of Object.keys(SONGS)) expect(await render(SongPage, song(id))).not.toContain('この曲に参加する')
+    for (const id of SONG_IDS) expect(await render(SongPage, song(id))).not.toContain('この曲に参加する')
   })
   it('参加ボタンの後に、募集されている役割から「何で参加するか」を選ぶ（歌う人だけではない）', async () => {
     const html = await render(JoinPage, { params: { id: 'minato' }, searchParams: {} })
@@ -100,7 +102,7 @@ describe('新しい Version として育てる（④⑤⑥）', () => {
     expect(html).toContain('あなたが主催する新しい Version')
   })
   it('何を受け継ぐか：元の歌に実在する物だけ・状態つき。利用できませんは選べない', async () => {
-    const cands = inheritCandidates(SONGS.minato)
+    const cands = (await view('minato')).inherit
     expect(cands.map((c) => `${c.label}／${c.statusLabel}`)).toEqual([
       'あさひさんの歌詞／自由に使えます',
       'あさひさんの曲／承認が必要',
@@ -113,7 +115,7 @@ describe('新しい Version として育てる（④⑤⑥）', () => {
     expect(html).toContain('何を受け継ぎますか？')
   })
   it('住所で利用できません を選ばれても、受け継がない', async () => {
-    const cands = inheritCandidates(SONGS.minato)
+    const cands = (await view('minato')).inherit
     const split = splitSelection(cands, ['c-mix', 'c-lyrics'])
     expect(split.free.map((c) => c.id)).toEqual(['c-lyrics'])
     expect(split.needsApproval).toEqual([])
@@ -256,8 +258,8 @@ describe('参加：募集の役割が1つなら、選ぶ操作だけを省く', 
   })
   it('募集複数で役割を選ばずに送る画面を開いても、選択画面に戻る', async () => {
     expect(await render(JoinPage, { params: { id: 'minato' }, searchParams: { step: 'submit' } })).toContain('data-screen="join-role"')
-    expect(resolveJoinRole(SONGS.minato.recruitment, undefined)).toBeNull()
-    expect(resolveJoinRole(SONGS.yoake.recruitment, undefined)?.autoSelected).toBe(true)
+    expect(resolveJoinRole((await view('minato')).recruitment, undefined)).toBeNull()
+    expect(resolveJoinRole((await view('yoake')).recruitment, undefined)?.autoSelected).toBe(true)
   })
 })
 

@@ -2,7 +2,7 @@ import React from 'react'
 import { notFound } from 'next/navigation'
 import { COPY, Icon, ScreenFrame, SecondaryButton, UnavailableButton, giftGate, type PrimarySlot } from '@/components/ui'
 import s from '@/components/ui/shell.module.css'
-import { creditText, creditsOf, recruitmentText } from '@/lib/preview/model'
+import { creditText, recruitmentText } from '@/lib/preview/model'
 import { hrefSong, uiData } from '@/lib/ui-data'
 
 // A 歌の画面（W2）。
@@ -15,7 +15,8 @@ export default async function SongPage({ params }: { params: { id: string } }) {
   const song = await uiData().getSong(params.id)
   if (!song) notFound()
 
-  const credits = creditsOf(song.contributions)
+  // ★つくった人・受け継げる物の判断は読み口（lib/ui-data）が lib/domain で済ませている。画面は受け取るだけ。
+  const credits = song.credits
   const recruiting = recruitmentText(song.recruitment)
   const gate = giftGate(song.gift)
 
