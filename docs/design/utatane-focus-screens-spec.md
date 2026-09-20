@@ -10,6 +10,7 @@
 - TYP の口の形：中央 TYHLD-platform の PR #865（取引1件を読む口・合流済み）と、中央の設計書 `docs/02-architecture/ty-point-foundation.md` §5 を正とする。
 - まだ無い口・項目には「仮の形」と書く。
 - 実際の画面：`app/ui/`（主要4導線と「自分」・データは仮の形 `lib/preview/sample.ts`）。共通の部品は `components/ui/`。
+- 素材（音源など）の置き場・読み方・再生は [utatane-materials-storage.md](utatane-materials-storage.md)（B の「送る物のファイル選び」の土台）。
 
 ## 0. 札の意味（試作と設計書で同じ）
 
