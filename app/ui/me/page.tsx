@@ -19,6 +19,16 @@ export default function MePage() {
         </span>
         <Icon name="right" size="s" />
       </a>
+      <a className={s.row} href="/ui/materials" data-link="materials">
+        <span className={s.jacket}>
+          <Icon name="wave" />
+        </span>
+        <span className={s.rowText}>
+          <b>自分の素材</b>
+          <span className={s.sub}>置いた音のファイル（あなただけが見られます）</span>
+        </span>
+        <Icon name="right" size="s" />
+      </a>
       <h2 className={s.section}>
         <Icon name="doc" />
         下書き
