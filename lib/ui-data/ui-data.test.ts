@@ -101,6 +101,10 @@ describe('差し替え（画面を1枚も書き直さずに、中身が変わる
         },
         children: [],
         lineage: [],
+        credits: [{ holderId: 'h-test', name: 'てすと', roles: ['歌詞'] }],
+        inherit: [
+          { id: 'x1-lyrics', label: 'てすとさんの歌詞', mode: 'free', statusLabel: '自由に使えます', selectable: true },
+        ],
       }
     },
     async getJoinDraftFor() {

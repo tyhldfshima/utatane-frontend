@@ -53,8 +53,12 @@ export type SongView = {
   grownFrom?: { songId: Id; title: string; inherited: string }
   /** この歌から生まれた歌 */
   children: { songId: Id | null; title: string; inherited: string; visible: boolean }[]
-  /** この歌が受け継いだ物（生まれた流れ） */
+  /** この歌が受け継いだ物（生まれた流れ）。traceVersionLineage の結果から読み口が作る */
   lineage: { label: string; icon: 'pen' | 'branch' | 'note' | 'mic' }[]
+  /** この歌をつくった人。採用され表示対象の Contribution だけから読み口が作る */
+  credits: CreditLine[]
+  /** 新しい Version として育てるときに受け継げる物。可否は effectiveMode の結果から読み口が作る */
+  inherit: InheritCandidate[]
   about: string
 }
 
@@ -135,8 +139,8 @@ export type InheritCandidate = {
  * 元の Version に実在する、採用済み・表示対象の Contribution だけを候補にする（えふさん確定 ⑤）。
  * 「詞・曲・歌声」を固定の項目にしない。
  */
-export function inheritCandidates(song: SongView): InheritCandidate[] {
-  return song.contributions
+export function inheritCandidates(contributions: ContributionView[]): InheritCandidate[] {
+  return contributions
     .filter((c) => c.state === 'adopted' && c.visible)
     .map((c) => ({
       id: c.id,

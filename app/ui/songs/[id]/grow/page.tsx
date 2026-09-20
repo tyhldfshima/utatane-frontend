@@ -2,7 +2,7 @@ import React from 'react'
 import { notFound } from 'next/navigation'
 import { COPY, GhostButton, Icon, ScreenFrame, StateView } from '@/components/ui'
 import s from '@/components/ui/shell.module.css'
-import { ADD_OPTIONS, NEW_WITHOUT_INHERIT_HREF, canProceedInherit, inheritCandidates, splitSelection } from '@/lib/preview/model'
+import { ADD_OPTIONS, NEW_WITHOUT_INHERIT_HREF, canProceedInherit, splitSelection } from '@/lib/preview/model'
 import { hrefSong, uiData } from '@/lib/ui-data'
 import { InheritForm } from './InheritForm'
 
@@ -20,7 +20,8 @@ export default async function GrowPage({ params, searchParams }: { params: { id:
   const song = await uiData().getSong(params.id)
   if (!song) notFound()
   const base = `${hrefSong(song.id)}/grow`
-  const candidates = inheritCandidates(song)
+  // ★何を受け継げるか・その可否は読み口（lib/ui-data）が lib/domain の effectiveMode で出す
+  const candidates = song.inherit
   const picked = splitSelection(candidates, list(searchParams.take))
   // お願い中の物（承認が必要）は「受け継ぐ物」に数える。住所に書かれていても、実在して承認が必要な物だけ。
   const asked = splitSelection(candidates, list(searchParams.ask)).needsApproval

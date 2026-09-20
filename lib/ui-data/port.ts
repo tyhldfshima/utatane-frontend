@@ -11,9 +11,9 @@
 
 import type { IconName } from '@/components/ui'
 import type { Id } from '@/lib/domain/types'
-import type { PersonRef, SongView } from '@/lib/preview/model'
+import type { CreditLine, InheritCandidate, PersonRef, SongView } from '@/lib/preview/model'
 
-export type { PersonRef, SongView }
+export type { CreditLine, InheritCandidate, PersonRef, SongView }
 
 // ── ホーム（W1） ─────────────────────────────────────────
 

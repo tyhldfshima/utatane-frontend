@@ -6,7 +6,7 @@
 // 画面は必ず uiData() 経由で読む。lib/preview/sample.ts を画面から直に読まない。
 
 import type { UiDataSource } from './port'
-import { sampleSource } from './sample-source'
+import { createSampleSource, sampleSource } from './sample-source'
 
 let current: UiDataSource = sampleSource
 
@@ -24,6 +24,6 @@ export function setUiDataSource(source: UiDataSource): () => void {
   }
 }
 
-export { sampleSource }
+export { sampleSource, createSampleSource }
 export { hrefSong } from '@/lib/preview/model'
 export * from './port'
