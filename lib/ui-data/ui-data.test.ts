@@ -122,7 +122,9 @@ describe('差し替え（画面を1枚も書き直さずに、中身が変わる
     async getMe() {
       return {
         viewer: { holderId: 'h-test', displayName: 'てすと' },
-        drafts: [],
+        drafts: [
+          { id: 'x1-draft', title: 'ためしの下書き', note: 'まだ誰にも公開されていません', publishHref: '/ui/drafts/x1-draft/publish', materialsHref: null, askHref: null },
+        ],
         contributions: [],
         notAdopted: [],
         listenLater: [],

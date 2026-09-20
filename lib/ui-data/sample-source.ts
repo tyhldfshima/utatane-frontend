@@ -40,6 +40,7 @@ import type {
   ConsentView,
   CreateOption,
   DeclareProvenanceInput,
+  MeDraftRow,
   MyMaterialView,
   PermissionAskItem,
   PermissionAskView,
@@ -406,6 +407,37 @@ export function createSampleSource(data: SampleData): UiDataSource {
     }
   }
 
+  // ── 自分の画面の「下書き」の行（I → G・素材・お願い への道） ────
+  // ★主催が自分の、まだ公開していない歌だけ。進める先は当てはまる物だけ出す。
+
+  const myDraftRows = (): MeDraftRow[] =>
+    data.publishDrafts
+      .map((d) => ({ d, version: versions.get(d.versionId) }))
+      .filter((x): x is { d: SampleData['publishDrafts'][number]; version: Version } =>
+        Boolean(x.version) && x.version?.publishedAt === null && x.version?.hostHolderId === viewer.holderId,
+      )
+      .map(({ d, version }) => {
+        const at = `/ui/drafts/${encodeURIComponent(d.id)}`
+        // よそで生まれた貢献のうち、承認が必要な物（可否は effectiveMode の結果）
+        const borrowed = version.contributions
+          .filter((vc) => vc.relation === 'referenced')
+          .map((vc) => contributions.get(vc.contributionId))
+          .filter((c): c is Contribution => c !== undefined && c.birthVersionId !== version.id)
+        const needsApproval = borrowed.filter((c) => modeOf(c.id, c.holderIds) === 'approval')
+        const parent = borrowed.length ? songByVersion.get(borrowed[0].birthVersionId) : undefined
+        return {
+          id: d.id,
+          title: d.title,
+          note: 'まだ誰にも公開されていません',
+          publishHref: `${at}/publish`,
+          materialsHref: version.materialIds.length > 0 ? `${at}/materials` : null,
+          askHref:
+            parent && needsApproval.length > 0
+              ? `/ui/songs/${encodeURIComponent(parent.id)}/grow/ask?take=${encodeURIComponent(needsApproval.map((c) => c.id).join(','))}`
+              : null,
+        }
+      })
+
   /** 「参加できる歌」の段だけ、募集中の役割を2段目に出す */
   const homeNote = (songId: Id, recruitNote: boolean): string => {
     const song = songOf(songId)
@@ -484,7 +516,7 @@ export function createSampleSource(data: SampleData): UiDataSource {
     async getMe(): Promise<MeView> {
       return {
         viewer,
-        drafts: ME.drafts.map((d) => ({ ...d })),
+        drafts: myDraftRows(),
         contributions: ME.contributions.map((x) => ({ ...x })),
         notAdopted: ME.notAdopted.map((x) => ({ ...x })),
         listenLater: ME.listenLater.map((x) => ({ ...x })),
