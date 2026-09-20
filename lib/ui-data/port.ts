@@ -109,6 +109,38 @@ export type GiftSettings = {
   balanceAtLabel: string
 }
 
+// ── 主催が公開する前の確認（G） ────────────────────────────
+
+/** ①〜⑥ のステップ。済んだかは公開前の再検証（lib/domain）と下書きのデータから出す */
+export type PublishStep = {
+  key: string
+  /** 画面に出す名前（例：④ 素材と元の歌） */
+  label: string
+  done: boolean
+}
+
+/** ⑥ 必要な同意の1行。主催は自分の分なので並べない */
+export type PublishConsentLine = {
+  holderId: Id
+  name: string
+  /** 同意済みか（公開前の再検証で、その人の分が満たされているか） */
+  done: boolean
+}
+
+export type PublishView = {
+  draftId: Id
+  title: string
+  hostName: string
+  steps: PublishStep[]
+  consents: PublishConsentLine[]
+  /** 公開に進めるか＝公開前の再検証（revalidateForPublish）が通ったか */
+  ready: boolean
+  /** 進めない理由（設計書の文言）。ready のときは空 */
+  blockedReasons: string[]
+  /** 公開した後に見に行く歌の住所。見本では公開の書き込みをしないので、無ければ null */
+  publishedSongId: Id | null
+}
+
 // ── ＋つくる ─────────────────────────────────────────────
 
 export type CreateOption = {
@@ -146,4 +178,10 @@ export interface UiDataSource {
   getGiftSettings(): Promise<GiftSettings>
 
   listCreateOptions(): Promise<CreateOption[]>
+
+  /**
+   * 主催が公開する前の確認（G）。公開前の再検証（revalidateForPublish・checkMaterials・
+   * evaluateCoauthorConsent）の結果を、画面に出す形にして返す。無ければ null
+   */
+  getPublish(draftId: Id): Promise<PublishView | null>
 }
