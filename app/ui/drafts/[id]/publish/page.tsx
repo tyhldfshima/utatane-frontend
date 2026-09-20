@@ -1,6 +1,6 @@
 import React from 'react'
 import { notFound } from 'next/navigation'
-import { COPY, ConfirmDialog, Icon, ScreenFrame, StateView, UnavailableButton, type PrimarySlot } from '@/components/ui'
+import { COPY, ConfirmDialog, Icon, ScreenFrame, SecondaryButton, StateView, UnavailableButton, type PrimarySlot } from '@/components/ui'
 import s from '@/components/ui/shell.module.css'
 import { hrefSong, uiData } from '@/lib/ui-data'
 
@@ -20,6 +20,7 @@ export default async function PublishPage({ params, searchParams }: { params: { 
   const v = await uiData().getPublish(params.id)
   if (!v) notFound()
   const base = `/ui/drafts/${encodeURIComponent(v.draftId)}/publish`
+  const materialsHref = `/ui/drafts/${encodeURIComponent(v.draftId)}/materials`
   // ★設計書の戻る先は「制作の画面へ」だが、主催から見た制作中の歌の画面は、まだこのリポにない
   //   （/ui/drafts/[id] は参加した人から見た形）。いまは下書きの置き場＝自分の管理画面へ戻す。
   const back = { href: '/ui/me', label: '自分の管理画面へ' }
@@ -91,6 +92,8 @@ export default async function PublishPage({ params, searchParams }: { params: { 
     )
   }
 
+  const materialsDone = v.steps.find((step) => step.key === 'materials')?.done === true
+
   // ★同意がそろっていないのに住所で小窓を開こうとしても、開かない
   const confirmOpen = searchParams.confirm === '1' && v.ready
   const primary: PrimarySlot = v.ready
@@ -105,6 +108,10 @@ export default async function PublishPage({ params, searchParams }: { params: { 
           {v.blockedReasons.map((reason) => (
             <StateView key={reason} kind="empty" message={reason} />
           ))}
+          {materialsDone ? null : (
+            // ④ 素材と元の歌 が済んでいないときの直し方（素材の出どころの申告）
+            <SecondaryButton label="素材の出どころを申告する" icon="pen" href={materialsHref} />
+          )}
         </div>
       </ScreenFrame>
       <ConfirmDialog

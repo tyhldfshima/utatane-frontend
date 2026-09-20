@@ -12,7 +12,16 @@
 import { effectiveMode, policyFor } from '@/lib/domain/permissions'
 import { requiredContributionsOf, traceVersionLineage } from '@/lib/domain/lineage'
 import { checkMaterials, revalidateForPublish } from '@/lib/domain/publish'
-import type { CoauthorApprovalMethod, Contribution, Id, Material, ReuseMode, Version } from '@/lib/domain/types'
+import type { MaterialIssue } from '@/lib/domain/publish'
+import type {
+  CoauthorApprovalMethod,
+  Contribution,
+  Id,
+  Material,
+  ProvenanceKind,
+  ReuseMode,
+  Version,
+} from '@/lib/domain/types'
 import { creditsOf, inheritCandidates, recruitmentText } from '@/lib/preview/model'
 import type { ContributionView, CreditLine, InheritCandidate, PersonRef, SongView } from '@/lib/preview/model'
 import {
@@ -31,6 +40,9 @@ import type { SampleData, SampleRoleKind } from '@/lib/preview/sample'
 import type {
   ConsentView,
   CreateOption,
+  DeclareProvenanceInput,
+  DraftMaterialView,
+  DraftMaterialsView,
   DraftView,
   GiftSettings,
   HomeSection,
@@ -61,7 +73,8 @@ export function createSampleSource(data: SampleData): UiDataSource {
   const holders = new Map<Id, PersonRef>(data.holders.map((h) => [h.holderId, h]))
   const roleKinds = new Map<Id, SampleRoleKind>(data.roleKinds.map((r) => [r.id, r]))
   const contributions = new Map<Id, Contribution>(data.contributions.map((c) => [c.id, c]))
-  const materials = new Map<Id, Material>(data.materials.map((m) => [m.id, m]))
+  // ★申告の保存で見本の正本を書き換えないよう、読み口ごとの写しを持つ
+  const materials = new Map<Id, Material>(data.materials.map((m) => [m.id, { ...m }]))
   const versions = new Map<Id, Version>(data.versions.map((v) => [v.id, v]))
   const songByVersion = new Map<Id, SampleData['songs'][number]>(data.songs.map((s) => [s.versionId, s]))
   const hidden = new Set<Id>(data.hiddenContributionIds)
@@ -310,6 +323,50 @@ export function createSampleSource(data: SampleData): UiDataSource {
     }
   }
 
+  // ── ④ 素材と元の歌：出どころの申告 ──────────────────────
+  // ★止まる理由は checkMaterials の結果から出す。画面に固定で書かない。
+
+  const ISSUE_TEXT: Record<MaterialIssue['reason'], string> = {
+    provenance_missing: '出どころが申告されていません。',
+    source_material_missing: '元の素材が見つかりません。',
+    source_contributions_not_embodied: '元の素材が収めている貢献を、すべて収めていません。',
+  }
+
+  const materialLabel = (id: Id): string => data.materialLabels[id] ?? id
+  const kindLabel = (kind: ProvenanceKind): string | null =>
+    data.provenanceKinds.find((k) => k.id === kind)?.label ?? null
+
+  const buildDraftMaterials = (draftId: Id): DraftMaterialsView | null => {
+    const draft = data.publishDrafts.find((d) => d.id === draftId)
+    if (!draft) return null
+    const version = versions.get(draft.versionId)
+    if (!version || version.publishedAt !== null) return null
+
+    const issues = checkMaterials(version, materials)
+    const rows: DraftMaterialView[] = version.materialIds.map((mid) => {
+      const m = materials.get(mid)
+      const issue = issues.find((x) => x.materialId === mid)
+      const source = m?.provenance?.sourceMaterialId
+      return {
+        id: mid,
+        label: materialLabel(mid),
+        declaredLabel: m?.provenance ? kindLabel(m.provenance.kind) : null,
+        sourceLabel: source ? materialLabel(source) : null,
+        issue: issue ? ISSUE_TEXT[issue.reason] : null,
+      }
+    })
+    return {
+      draftId: draft.id,
+      title: draft.title,
+      materials: rows,
+      kinds: data.provenanceKinds.map((k) => ({ id: k.id as string, label: k.label })),
+      sourceOptions: Array.from(materials.keys())
+        .filter((id) => !version.materialIds.includes(id))
+        .map((id) => ({ id, label: materialLabel(id) })),
+      done: issues.length === 0,
+    }
+  }
+
   /** 「参加できる歌」の段だけ、募集中の役割を2段目に出す */
   const homeNote = (songId: Id, recruitNote: boolean): string => {
     const song = songOf(songId)
@@ -417,6 +474,32 @@ export function createSampleSource(data: SampleData): UiDataSource {
 
     async getPublish(draftId: string): Promise<PublishView | null> {
       return buildPublish(draftId)
+    },
+
+    async getDraftMaterials(draftId: string): Promise<DraftMaterialsView | null> {
+      return buildDraftMaterials(draftId)
+    },
+
+    /** ★見本の読み口の中に保存する（本物の保存は PR #4〜#6 待ち） */
+    async declareProvenance(input: DeclareProvenanceInput): Promise<DraftMaterialsView | null> {
+      const draft = data.publishDrafts.find((d) => d.id === input.draftId)
+      if (!draft) return null
+      const version = versions.get(draft.versionId)
+      if (!version || version.publishedAt !== null) return null
+      if (!version.materialIds.includes(input.materialId)) return null
+      const m = materials.get(input.materialId)
+      if (!m) return null
+      const kind = data.provenanceKinds.find((k) => k.id === input.kind)
+      if (!kind) return null
+
+      m.provenance = {
+        kind: kind.id,
+        declaredBy: version.hostHolderId,
+        declaredAt: data.now,
+        ...(input.sourceMaterialId ? { sourceMaterialId: input.sourceMaterialId } : {}),
+      }
+      cache.clear() // 素材が変わると、その Version が使う貢献の見え方も変わる
+      return buildDraftMaterials(input.draftId)
     },
   }
 }
