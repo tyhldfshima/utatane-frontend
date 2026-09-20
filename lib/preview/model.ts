@@ -178,3 +178,10 @@ export const ADD_OPTIONS = [
   { id: 'performance', label: '演奏' },
   { id: 'other', label: 'その他' },
 ] as const
+
+// ── 画面の住所 ───────────────────────────────────────────
+
+/** 歌の画面の住所。見本か本物かに関わらず同じ（画面の決まり） */
+export function hrefSong(id: Id): string {
+  return `/ui/songs/${encodeURIComponent(id)}`
+}

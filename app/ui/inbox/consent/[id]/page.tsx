@@ -2,15 +2,15 @@ import React from 'react'
 import { notFound } from 'next/navigation'
 import { ConfirmDialog, GhostButton, Icon, ScreenFrame } from '@/components/ui'
 import s from '@/components/ui/shell.module.css'
-import { CONSENTS } from '@/lib/preview/sample'
+import { uiData } from '@/lib/ui-data'
 
 // F 公開する前の確認（参加者の同意）。ステップを縦に並べた1枚（明確なステップ・URL の印つき）。
 // 同意の前に確認の小窓を1回。同意しても、すぐには公開されない（主催が公開する）。
 
 type Search = { confirm?: string; done?: string }
 
-export default function ConsentPage({ params, searchParams }: { params: { id: string }; searchParams: Search }) {
-  const c = CONSENTS[params.id as keyof typeof CONSENTS]
+export default async function ConsentPage({ params, searchParams }: { params: { id: string }; searchParams: Search }) {
+  const c = await uiData().getConsent(params.id)
   if (!c) notFound()
   const base = `/ui/inbox/consent/${c.id}`
 
@@ -65,7 +65,7 @@ export default function ConsentPage({ params, searchParams }: { params: { id: st
           </h2>
           <div className={s.row}>
             <Icon name="mic" />
-            <span className={s.rowText}>そらさん　{c.yourRole}</span>
+            <span className={s.rowText}>{c.yourName}さん　{c.yourRole}</span>
           </div>
           <h2 className={s.section} id="step-3">
             3　届け方

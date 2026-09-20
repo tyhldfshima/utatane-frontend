@@ -2,14 +2,11 @@ import React from 'react'
 import { notFound } from 'next/navigation'
 import { COPY, GhostButton, Icon, ScreenFrame, StateView, giftGate } from '@/components/ui'
 import s from '@/components/ui/shell.module.css'
-import { findSong, hrefSong } from '@/lib/preview/sample'
+import { hrefSong, uiData } from '@/lib/ui-data'
 
 // ② ありがとうを贈る（C 量を選ぶ → D 贈る前の確認 → E 結果）。UTATANE のシート。
-// ★仮の形：TYP の口（残高・量の札・贈る）とはまだつながない。量の札・残高は見本値。
+// ★仮の形：TYP の口（贈る）とはまだつながない。量の札・残高は読み口から来る（本物は中央の設定と TYP の口）。
 // ★確認は D の1回だけ（D が確認の画面）。取り消せないことを D で言い切る。
-
-const AMOUNTS = [100, 300, 500]
-const BALANCE = 1200
 
 type Search = { step?: string; amount?: string; r?: string }
 
@@ -24,8 +21,8 @@ function Sheet({ title, children }: { title: string; children: React.ReactNode }
   )
 }
 
-export default function ThanksPage({ params, searchParams }: { params: { id: string }; searchParams: Search }) {
-  const song = findSong(params.id)
+export default async function ThanksPage({ params, searchParams }: { params: { id: string }; searchParams: Search }) {
+  const song = await uiData().getSong(params.id)
   if (!song) notFound()
   const songHref = hrefSong(song.id)
   const base = `${songHref}/thanks`
@@ -42,12 +39,13 @@ export default function ThanksPage({ params, searchParams }: { params: { id: str
       </ScreenFrame>
     )
   }
-  const amount = AMOUNTS.includes(Number(searchParams.amount)) ? Number(searchParams.amount) : null
+  const { amounts, balance, balanceAtLabel } = await uiData().getGiftSettings()
+  const amount = amounts.includes(Number(searchParams.amount)) ? Number(searchParams.amount) : null
   const step = searchParams.step === 'confirm' && amount ? 'confirm' : searchParams.step === 'result' && amount ? 'result' : 'amount'
   const receivers = song.gift.receivableCount
 
   if (step === 'amount') {
-    const tooMuch = amount !== null && amount > BALANCE
+    const tooMuch = amount !== null && amount > balance
     return (
       <Sheet title={song.title}>
         <ScreenFrame
@@ -62,7 +60,7 @@ export default function ThanksPage({ params, searchParams }: { params: { id: str
         >
           <div data-screen="thanks-amount">
             <div className={s.amounts} role="group" aria-label="量">
-              {AMOUNTS.map((a) => (
+              {amounts.map((a) => (
                 <a
                   key={a}
                   className={`${s.amount} ${a === amount ? s.amountOn : ''}`}
@@ -84,7 +82,7 @@ export default function ThanksPage({ params, searchParams }: { params: { id: str
             <dl className={s.kv}>
               <dt>あなたの TYP</dt>
               <dd>
-                {BALANCE.toLocaleString('ja-JP')} TYP <span className={s.sub}>（13時05分 時点）</span>
+                {balance.toLocaleString('ja-JP')} TYP <span className={s.sub}>（{balanceAtLabel}）</span>
               </dd>
             </dl>
           </div>

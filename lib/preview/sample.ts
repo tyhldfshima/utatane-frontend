@@ -2,7 +2,10 @@
 // 画面は「見本のデータ」の札を出す。つなぐ便（PR #4〜#6 の合流の後）で、この読み込みを本物に差し替える。
 // 題名・人の名前は見本。見ている人＝そら（h-sora）。
 
+import { hrefSong } from './model'
 import type { ContributionView, SongView } from './model'
+
+export { hrefSong }
 
 const p = (holderId: string, displayName: string) => ({ holderId, displayName })
 const ASAHI = p('h-asahi', 'あさひ')
@@ -171,6 +174,54 @@ export const CONSENTS = {
   },
 } as const
 
-export function hrefSong(id: string) {
-  return `/ui/songs/${encodeURIComponent(id)}`
-}
+
+// ── 画面の読み口（lib/ui-data）に渡す見本 ──────────────────────
+// ここから下は、これまで画面の中に直に書いていた見本を、データとして出した物。
+// 本物とつなぐ便では lib/ui-data/index.ts を差し替えるだけで、画面は変えない。
+
+/** ホームの段（W1）。段の順と、どの歌を載せるかも見本。 */
+export const HOME = [
+  { key: 'seed', title: '種', icon: 'seed', songIds: ['yoake'] },
+  { key: 'join', title: '参加できる歌', icon: 'join', songIds: ['minato', 'yoake'], recruitNote: true },
+  { key: 'branch', title: '枝分かれ', icon: 'branch', songIds: ['futatabi'] },
+  { key: 'newVersion', title: '新しい Version', icon: 'newVersion', songIds: ['futari'] },
+] as const
+
+/** 対応待ち（M8）。公開する前の確認のお願い以外は、まだ見本を置かない。 */
+export const INBOX = [
+  { key: 'consent', title: '公開する前の確認のお願い', consentIds: ['ame'] },
+  { key: 'join', title: '参加希望', consentIds: [] },
+  { key: 'submission', title: '送られた歌の確認', consentIds: [] },
+  { key: 'permission', title: '使わせてのお願い', consentIds: [] },
+] as const
+
+/** 自分の管理画面（I）。★TYポイント・TYP の残高と入口は置かない（941be1bd）。 */
+export const ME = {
+  drafts: [{ id: null, title: '「港の灯り」から育てた歌', note: 'まだ誰にも公開されていません' }],
+  contributions: [{ title: '雨のあとで', roleLabel: 'ボーカル' }],
+  notAdopted: [{ title: 'コーラス 別案（港の灯り）', statusLabel: '今回は見送られました' }],
+  listenLater: [{ songId: 'minato', title: '港の灯り', byline: 'あさひ ほか3人' }],
+} as const
+
+/** 公開プロフィール（M9）。ほかの人から見える形。 */
+export const PROFILE = {
+  roleLabels: ['ボーカル'],
+  created: [],
+  joined: [{ title: '雨のあとで', roleLabel: 'ボーカル' }],
+  usedIn: [],
+} as const
+
+/** ありがとうの量の札・残高（仮の形：本物は中央の設定と TYP の口から読む）。 */
+export const GIFT = {
+  amounts: [100, 300, 500],
+  balance: 1200,
+  balanceAtLabel: '13時05分 時点',
+} as const
+
+/** ＋つくる（何から始めますか）。進めるのは「今ある歌から育てる」だけ。 */
+export const CREATE_OPTIONS = [
+  { id: 'hum', label: '音・鼻歌から始める', icon: 'mic', href: null, reason: 'この始め方は、まだ準備中です。' },
+  { id: 'lyrics', label: '歌詞から始める', icon: 'pen', href: null, reason: 'この始め方は、まだ準備中です。' },
+  { id: 'upload', label: '音源を投稿する', icon: 'note', href: null, reason: 'この始め方は、まだ準備中です。' },
+  { id: 'grow', label: '今ある歌から育てる', icon: 'branch', href: `${hrefSong('minato')}/tree` },
+] as const

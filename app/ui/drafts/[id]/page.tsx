@@ -3,7 +3,7 @@ import { notFound } from 'next/navigation'
 import { GhostButton, Icon, ScreenFrame, UnavailableButton } from '@/components/ui'
 import s from '@/components/ui/shell.module.css'
 import { ADD_OPTIONS, NEW_WITHOUT_INHERIT_HREF, inheritCandidates, joinRoleText, splitSelection } from '@/lib/preview/model'
-import { DRAFTS, findSong, hrefSong } from '@/lib/preview/sample'
+import { hrefSong, uiData, type SongView } from '@/lib/ui-data'
 
 // W4 制作中の歌。
 // ・参加した人から見た形（/ui/drafts/minato-join?sent=役割）
@@ -11,11 +11,16 @@ import { DRAFTS, findSong, hrefSong } from '@/lib/preview/sample'
 
 type Search = { sent?: string; from?: string; take?: string; add?: string; ask?: string }
 
-export default function DraftPage({ params, searchParams }: { params: { id: string }; searchParams: Search }) {
-  if (params.id === 'new') return <GrownDraft searchParams={searchParams} />
-  const draft = DRAFTS[params.id as keyof typeof DRAFTS]
+// ★読み込みはこの1枚（ページ）でまとめて行い、下の部品には出来た物を渡す。
+export default async function DraftPage({ params, searchParams }: { params: { id: string }; searchParams: Search }) {
+  if (params.id === 'new') {
+    const from = await uiData().getSong(searchParams.from ?? '')
+    if (!from) notFound()
+    return <GrownDraft from={from} searchParams={searchParams} />
+  }
+  const draft = await uiData().getDraft(params.id)
   if (!draft) notFound()
-  const parent = findSong(draft.parentSongId)
+  const parent = await uiData().getSong(draft.parentSongId)
   const role = parent?.recruitment?.roles.find((r) => r.roleKindId === searchParams.sent)
   return (
     <ScreenFrame back={{ href: hrefSong(draft.parentSongId), label: '元の歌の画面へ' }}>
@@ -51,9 +56,7 @@ export default function DraftPage({ params, searchParams }: { params: { id: stri
   )
 }
 
-function GrownDraft({ searchParams }: { searchParams: Search }) {
-  const from = findSong(searchParams.from ?? '')
-  if (!from) notFound()
+function GrownDraft({ from, searchParams }: { from: SongView; searchParams: Search }) {
   // 住所に書かれた物でも、元の歌に実在し選べる物だけを数える（利用できませんは捨てる）
   const cands = inheritCandidates(from)
   const take = splitSelection(cands, (searchParams.take ?? '').split(',')).free.map((c) => c.id)
