@@ -41,6 +41,9 @@ import type {
   ConsentView,
   CreateOption,
   DeclareProvenanceInput,
+  PermissionAskItem,
+  PermissionAskView,
+  RequestPermissionInput,
   DraftMaterialView,
   DraftMaterialsView,
   DraftView,
@@ -367,6 +370,42 @@ export function createSampleSource(data: SampleData): UiDataSource {
     }
   }
 
+  // ── 使わせてとお願いする（J の「承認が必要」） ──────────────
+  // ★「承認が必要」かは、読み口が lib/domain の effectiveMode で畳んだ結果（song.inherit の mode）。
+  //   ここで固定の一覧を持たない。
+  // ★送ったお願いは、まだ承認されていないので Permission ではない。見本の中の「返事待ち」として持つ。
+
+  const requests = data.permissionRequests.map((r) => ({ ...r }))
+
+  const isWaiting = (songId: Id, contributionId: Id): boolean =>
+    requests.some((r) => r.songId === songId && r.contributionId === contributionId)
+
+  const buildAsk = (songId: Id, selectedIds: Id[]): PermissionAskView | null => {
+    const song = songOf(songId)
+    if (!song) return null
+    const picked = song.inherit.filter((c) => selectedIds.includes(c.id) && c.selectable)
+    const needsApproval = picked.filter((c) => c.mode === 'approval')
+    const free = picked.filter((c) => c.mode === 'free')
+    const items: PermissionAskItem[] = needsApproval.map((c) => {
+      const con = contributions.get(c.id)
+      return {
+        id: c.id,
+        label: c.label,
+        holderNames: (con?.holderIds ?? []).map((h) => personOf(h).displayName),
+        statusLabel: c.statusLabel,
+        waiting: isWaiting(songId, c.id),
+      }
+    })
+    return {
+      songId: song.id,
+      songTitle: song.title,
+      items,
+      freeIds: free.map((c) => c.id),
+      canSkip: free.length > 0,
+      waiting: items.length > 0 && items.every((i) => i.waiting),
+    }
+  }
+
   /** 「参加できる歌」の段だけ、募集中の役割を2段目に出す */
   const homeNote = (songId: Id, recruitNote: boolean): string => {
     const song = songOf(songId)
@@ -481,6 +520,26 @@ export function createSampleSource(data: SampleData): UiDataSource {
     },
 
     /** ★見本の読み口の中に保存する（本物の保存は PR #4〜#6 待ち） */
+    async getPermissionAsk(songId: string, selectedIds: string[]): Promise<PermissionAskView | null> {
+      return buildAsk(songId, selectedIds)
+    },
+
+    /** ★見本の読み口の中で返事待ちに進むだけ（本物の送信は PR #4〜#6 待ち） */
+    async requestPermission(input: RequestPermissionInput): Promise<PermissionAskView | null> {
+      const view = buildAsk(input.songId, input.contributionIds)
+      if (!view) return null
+      for (const item of view.items) {
+        if (isWaiting(input.songId, item.id)) continue
+        requests.push({
+          songId: input.songId,
+          contributionId: item.id,
+          requestedBy: viewer.holderId,
+          requestedAt: data.now,
+        })
+      }
+      return buildAsk(input.songId, input.contributionIds)
+    },
+
     async declareProvenance(input: DeclareProvenanceInput): Promise<DraftMaterialsView | null> {
       const draft = data.publishDrafts.find((d) => d.id === input.draftId)
       if (!draft) return null

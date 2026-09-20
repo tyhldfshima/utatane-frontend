@@ -177,6 +177,42 @@ export type DeclareProvenanceInput = {
   sourceMaterialId?: Id
 }
 
+// ── 使わせてとお願いする（J の「承認が必要」） ────────────────
+
+export type PermissionAskItem = {
+  id: Id
+  /** 例：あさひさんの曲 */
+  label: string
+  /** お願いする相手（作った人） */
+  holderNames: string[]
+  /** 「承認が必要」。★effectiveMode の結果から来る（固定値にしない） */
+  statusLabel: string
+  /** すでにお願いを送って、返事を待っているか */
+  waiting: boolean
+}
+
+export type PermissionAskView = {
+  songId: Id
+  songTitle: string
+  /** 承認が必要な物だけ（effectiveMode が approval と畳んだ物） */
+  items: PermissionAskItem[]
+  /** そのまま使える物（お願いせずに続けるときに持って行く） */
+  freeIds: Id[]
+  /**
+   * お願いせずに続けられるか。選んだ物がすべて承認の要る物なら false
+   * （お願いをやめると受け継ぐ物が0件になり、Version の派生にならないため）
+   */
+  canSkip: boolean
+  /** 送ったお願いが1つ以上あるか（返事待ちの状態） */
+  waiting: boolean
+}
+
+export type RequestPermissionInput = {
+  songId: Id
+  /** お願いする貢献。承認が必要でない物は捨てる */
+  contributionIds: Id[]
+}
+
 // ── ＋つくる ─────────────────────────────────────────────
 
 export type CreateOption = {
@@ -230,4 +266,16 @@ export interface UiDataSource {
    * 申告できなかったとき（下書き・素材・種類が無い）は null。
    */
   declareProvenance(input: DeclareProvenanceInput): Promise<DraftMaterialsView | null>
+
+  /**
+   * 使わせてとお願いする（J）。選んだ物のうち「承認が必要」な物だけを返す。
+   * 「承認が必要」かは lib/domain の effectiveMode の結果から決まる。歌が無ければ null
+   */
+  getPermissionAsk(songId: Id, selectedIds: Id[]): Promise<PermissionAskView | null>
+
+  /**
+   * お願いを送る。
+   * ★本物の送信は PR #4〜#6 待ち。見本の読み口では、読み口が持つ見本の中で返事待ちに進むだけ。
+   */
+  requestPermission(input: RequestPermissionInput): Promise<PermissionAskView | null>
 }

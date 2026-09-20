@@ -13,6 +13,7 @@ import DraftPage from './drafts/[id]/page'
 import ConsentPage from './inbox/consent/[id]/page'
 import PublishPage from './drafts/[id]/publish/page'
 import DraftMaterialsPage from './drafts/[id]/materials/page'
+import AskPage from './songs/[id]/grow/ask/page'
 import InboxPage from './inbox/page'
 import MePage from './me/page'
 import ProfilePage from './me/profile/page'
@@ -160,7 +161,9 @@ const SCREENS: { name: string; html: () => Promise<string> }[] = [
   { name: '参加（送りました）', html: () => render(JoinPage, { params: { id: 'minato' }, searchParams: { step: 'sent', role: 'guitar' } }) },
   { name: '参加（募集が1つ）', html: () => render(JoinPage, song('yoake')) },
   { name: '育てる（何を受け継ぐか）', html: () => render(GrowPage, song('minato')) },
-  { name: '育てる（お願い）', html: () => render(GrowPage, { params: { id: 'minato' }, searchParams: { step: 'next', take: ['c-lyrics', 'c-melody'] } }) },
+  { name: '育てる（お願いの内容）', html: () => render(AskPage, { params: { id: 'minato' }, searchParams: { take: ['c-lyrics', 'c-melody'] } }) },
+  { name: '育てる（お願いを送った後）', html: () => render(AskPage, { params: { id: 'minato' }, searchParams: { take: 'c-melody', step: 'sent' } }) },
+  { name: '育てる（お願いのエラー）', html: () => render(AskPage, { params: { id: 'minato' }, searchParams: { take: 'c-melody', state: 'error' } }) },
   { name: '育てる（何を加えるか）', html: () => render(GrowPage, { params: { id: 'minato' }, searchParams: { step: 'add', take: 'c-lyrics' } }) },
   { name: '制作中の歌（参加した先）', html: () => render(DraftPage, { params: { id: 'minato-join' }, searchParams: { sent: 'guitar' } }) },
   { name: '制作中の歌（育てて作った）', html: () => render(DraftPage, { params: { id: 'new' }, searchParams: { from: 'minato', take: 'c-lyrics', add: 'vocal' } }) },
