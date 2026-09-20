@@ -5,8 +5,24 @@ export const COPY = {
   retry: 'もう一度',
   back: '戻る',
   close: '閉じる',
+  cancel: 'やめる',
   loading: '読み込んでいます',
   networkError: '通信がつながりませんでした。電波のよい所で、もう一度お試しください。',
+  /** B・F・I のエラーは短い形（設計書 §3 B・F・I） */
+  networkErrorShort: '通信がつながりませんでした。',
+  /** A エラー（設計書 §3 A） */
+  songLoadErrorTitle: '歌を読み込めませんでした',
+  /** B 読み込み中・エラー（設計書 §3 B） */
+  joinSending: '送っています',
+  joinSendErrorTitle: '送れませんでした',
+  /** C 読み込み中・エラー・結果を確認しています（設計書 §3 C） */
+  walletChecking: '確かめています',
+  walletErrorTitle: 'いまの TYP を確かめられませんでした',
+  giftPendingBlock: '前のありがとうの結果を確認しています。結果がわかるまで、次のありがとうは贈れません。',
+  /** F エラー（設計書 §3 F） */
+  consentSendErrorTitle: '同意を送れませんでした',
+  /** I エラー（設計書 §3 I） */
+  meLoadErrorTitle: '読み込めませんでした',
   checkingTitle: '結果を確認しています',
   checkingBody: '結果がわかったら、お知らせでお伝えします。二重に贈ることはありません。',
   notReadyTitle: 'いまは表示できません',

@@ -10,7 +10,9 @@ import { hrefSong, uiData } from '@/lib/ui-data'
 // 募集が1つ：選ぶ操作だけを省き、その役割を自動で選んで「送る」へ進む。どの画面にも「〇〇で参加」は出す。
 // ★送った物は、主催が入れるまで Contribution にしない（既存の決まり）。
 
-type Search = { step?: string; role?: string }
+// state＝送る操作の途中の見せ方（sending＝送っています／error＝送れませんでした）。
+// ★本物の送る口は PR #4 の合流の後。いまは見せ方だけを設計書どおりにしておく。
+type Search = { step?: string; role?: string; state?: string }
 
 export default async function JoinPage({ params, searchParams }: { params: { id: string }; searchParams: Search }) {
   const song = await uiData().getSong(params.id)
@@ -82,13 +84,46 @@ export default async function JoinPage({ params, searchParams }: { params: { id:
   }
 
   if (step === 'submit' && role) {
+    const submitBack = auto ? songBack : { href: base, label: '何で参加するかへ戻る' }
+    const retryHref = `${base}?step=submit${roleQuery}`
+
+    // B 読み込み中（設計書 §3 B「押せない『送っています』」・主ボタンは置かない）
+    if (searchParams.state === 'sending') {
+      return (
+        <ScreenFrame back={submitBack} title={auto ? COPY.joinTitle : `${role.roleLabel}を送る`} primary={{ kind: 'busy', label: COPY.joinSending }}>
+          <div data-screen="join-sending">
+            {steps}
+            {roleMark}
+          </div>
+        </ScreenFrame>
+      )
+    }
+
+    // B エラー（設計書 §3 B「送れませんでした。通信がつながりませんでした。」［もう一度］［やめる］・主ボタンはもう一度）
+    if (searchParams.state === 'error') {
+      return (
+        <ScreenFrame
+          back={submitBack}
+          title={auto ? COPY.joinTitle : `${role.roleLabel}を送る`}
+          primary={{ kind: 'action', label: COPY.retry, icon: 'refresh', href: retryHref }}
+          secondary={<GhostButton label={COPY.cancel} href={hrefSong(song.id)} />}
+        >
+          <div data-screen="join-error">
+            {steps}
+            {roleMark}
+            <StateView kind="error" title={COPY.joinSendErrorTitle} message={COPY.networkErrorShort} />
+          </div>
+        </ScreenFrame>
+      )
+    }
+
     return (
       <ScreenFrame
         // 募集が1つのときは選ぶ画面が無いので、戻る先は歌の画面
-        back={auto ? songBack : { href: base, label: '何で参加するかへ戻る' }}
+        back={submitBack}
         title={auto ? COPY.joinTitle : `${role.roleLabel}を送る`}
         primary={{ kind: 'action', label: `${role.roleLabel}を送る`, icon: 'send', href: `${base}?step=sent${roleQuery}` }}
-        secondary={<GhostButton label="やめる" href={hrefSong(song.id)} />}
+        secondary={<GhostButton label={COPY.cancel} href={hrefSong(song.id)} />}
       >
         <div data-screen="join-submit" data-auto-role={auto ? 'true' : 'false'}>
           {steps}
