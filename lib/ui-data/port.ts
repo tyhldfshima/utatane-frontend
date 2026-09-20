@@ -80,9 +80,25 @@ export type ConsentView = {
 
 // ── 自分（I） ────────────────────────────────────────────
 
+/**
+ * 自分の画面の「下書き」の行。主催が自分の、まだ公開していない歌。
+ * ★進める先は、当てはまる物だけ href が入る（当たらなければ null）。
+ */
+export type MeDraftRow = {
+  id: Id | null
+  title: string
+  note: string
+  /** 公開する前の確認（G）へ */
+  publishHref: string | null
+  /** ④ 素材と元の歌（出どころの申告）へ。素材を使っていなければ null */
+  materialsHref: string | null
+  /** 使わせてとお願いする（J）へ。承認が必要な物を受け継いでいなければ null */
+  askHref: string | null
+}
+
 export type MeView = {
   viewer: PersonRef
-  drafts: { id: Id | null; title: string; note: string }[]
+  drafts: MeDraftRow[]
   contributions: { title: string; roleLabel: string }[]
   /** 採用されなかった送り物 */
   notAdopted: { title: string; statusLabel: string }[]

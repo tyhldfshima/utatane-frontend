@@ -195,6 +195,8 @@ const CONTRIBUTIONS: Contribution[] = [
   // 公開前の下書き「星のかけら」（主催＝うみ）。同意はそろい、素材の申告だけがまだ
   c('c7-melody', 'melody', ['h-umi'], 'v-hoshi', T_DRAFT),
   c('c7-vocal', 'vocal', ['h-sora'], 'v-hoshi', T_DRAFT),
+  // ★見ている人（そら）が主催の下書き。「港の灯り」から育てた
+  c('c8-arrange', 'arrangement', ['h-sora'], 'v-sodate', T_DRAFT),
 ]
 
 /** 由来（子 → 親）。「港の灯り」の歌詞は「夜明けのうた」の歌詞を元にしている */
@@ -215,6 +217,12 @@ const MATERIALS: Material[] = [
     storageFileId: 'f-hare',
     embodiedContributionIds: ['c6-melody', 'c6-vocal'],
     provenance: { kind: 'self_made', declaredBy: 'h-umi', declaredAt: T_DRAFT },
+  },
+  {
+    id: 'm-sodate',
+    storageFileId: 'f-sodate',
+    embodiedContributionIds: ['c8-arrange'],
+    provenance: { kind: 'self_made', declaredBy: 'h-sora', declaredAt: T_DRAFT },
   },
   // ★出どころの申告がまだ＝公開の再検証（checkMaterials）で止まる見本
   {
@@ -307,6 +315,18 @@ const VERSIONS: Version[] = [
     ],
     materialIds: ['m-hoshi'],
   },
+  // ★見ている人（そら）が主催の下書き。自分の画面の「下書き」の行から進む先
+  {
+    id: 'v-sodate',
+    hostHolderId: 'h-sora',
+    publishedAt: null,
+    contributions: [
+      { contributionId: 'c8-arrange', relation: 'created' },
+      { contributionId: 'c-lyrics', relation: 'referenced' },
+      { contributionId: 'c-melody', relation: 'referenced' },
+    ],
+    materialIds: ['m-sodate'],
+  },
   // 「港の灯り」から生まれたが、いまは見られない歌（公開状態が private）
   {
     id: 'v-himitsu',
@@ -346,6 +366,7 @@ const REUSE_POLICIES: ReusePolicyVersion[] = [
   policy('c6-vocal', 'free', 'any_version', T_DRAFT),
   policy('c7-melody', 'approval', 'any_version', T_DRAFT),
   policy('c7-vocal', 'free', 'any_version', T_DRAFT),
+  policy('c8-arrange', 'free', 'any_version', T_DRAFT),
 ]
 
 // ── 成立済みの許諾（使わせての承認） ───────────────────────────
@@ -381,6 +402,7 @@ const MATERIAL_LABELS: Record<Id, string> = {
   'm-ame': '雨のあとで_1.wav',
   'm-hare': '晴れの日に_1.wav',
   'm-hoshi': '星のかけら_1.wav',
+  'm-sodate': '育てた歌_1.wav',
 }
 
 // ── 公開前の下書き（G） ────────────────────────────────────
@@ -389,6 +411,7 @@ const PUBLISH_DRAFTS: SampleDraft[] = [
   { id: 'ame', versionId: 'v-ame', title: '雨のあとで', deliveryReady: true, publishedSongId: null },
   { id: 'hare', versionId: 'v-hare', title: '晴れの日に', deliveryReady: true, publishedSongId: 'hare' },
   { id: 'hoshi', versionId: 'v-hoshi', title: '星のかけら', deliveryReady: true, publishedSongId: null },
+  { id: 'sodate', versionId: 'v-sodate', title: '「港の灯り」から育てた歌', deliveryReady: true, publishedSongId: null },
 ]
 
 /**
@@ -555,7 +578,7 @@ export const INBOX = [
 
 /** 自分の管理画面（I）。★TYポイント・TYP の残高と入口は置かない（941be1bd）。 */
 export const ME = {
-  drafts: [{ id: null, title: '「港の灯り」から育てた歌', note: 'まだ誰にも公開されていません' }],
+  // ★下書きは PUBLISH_DRAFTS（主催が自分の物）から出す。ここには持たない
   contributions: [{ title: '雨のあとで', roleLabel: 'ボーカル' }],
   notAdopted: [{ title: 'コーラス 別案（港の灯り）', statusLabel: '今回は見送られました' }],
   listenLater: [{ songId: 'minato', title: '港の灯り', byline: 'あさひ ほか3人' }],

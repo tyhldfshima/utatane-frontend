@@ -1,5 +1,5 @@
 import React from 'react'
-import { Icon } from '@/components/ui'
+import { Icon, SecondaryButton } from '@/components/ui'
 import s from '@/components/ui/shell.module.css'
 import { hrefSong, uiData } from '@/lib/ui-data'
 
@@ -37,14 +37,23 @@ export default async function MePage() {
         下書き
       </h2>
       {me.drafts.length === 0 ? (
-        <p className={s.sub}>まだありません。</p>
+        // 設計書 §3 I 空
+        <p className={s.sub}>まだ下書きはありません。</p>
       ) : (
         me.drafts.map((d, i) => (
-          <div key={d.id ?? `draft-${i}`} className={s.row}>
-            <span className={s.rowText}>
-              <b>{d.title}</b>
-              <span className={s.sub}>{d.note}</span>
-            </span>
+          <div key={d.id ?? `draft-${i}`} data-draft={d.id ?? `draft-${i}`}>
+            <div className={s.row}>
+              <Icon name="doc" />
+              <span className={s.rowText}>
+                <b>{d.title}</b>
+                <span className={s.sub}>{d.note}</span>
+              </span>
+            </div>
+            {/* ★進める先は、当てはまる物だけ出す（読み口が決める）。
+                設計書・試作に「下書きの行から進む」道の指定は無い（最小の形） */}
+            {d.publishHref ? <SecondaryButton label="公開する前の確認" icon="check" href={d.publishHref} /> : null}
+            {d.materialsHref ? <SecondaryButton label="素材と元の歌" icon="wave" href={d.materialsHref} /> : null}
+            {d.askHref ? <SecondaryButton label="使わせてとお願いする" icon="hand" href={d.askHref} /> : null}
           </div>
         ))
       )}

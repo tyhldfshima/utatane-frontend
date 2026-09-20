@@ -73,7 +73,12 @@ describe('申告の項目は、決まりが求める物と同じ', () => {
     expect(KIND_REQUIRED_REASON).toBe('出どころを1つ選んでください。')
     expect(SOURCE_REQUIRED_REASON).toBe('元の素材を選んでください。')
     expect(FROM_UTATANE).toBe('from_utatane_material')
-    expect((await src.getDraftMaterials('hoshi'))?.sourceOptions.map((o) => o.id)).toEqual(['m-ame', 'm-hare'])
+    // その下書きが使っていない素材が、元にできる候補
+    expect((await src.getDraftMaterials('hoshi'))?.sourceOptions.map((o) => o.id)).toEqual([
+      'm-ame',
+      'm-hare',
+      'm-sodate',
+    ])
   })
 })
 
