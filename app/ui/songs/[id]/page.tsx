@@ -3,7 +3,7 @@ import { notFound } from 'next/navigation'
 import { COPY, Icon, ScreenFrame, SecondaryButton, UnavailableButton, giftGate, type PrimarySlot } from '@/components/ui'
 import s from '@/components/ui/shell.module.css'
 import { creditText, creditsOf, recruitmentText } from '@/lib/preview/model'
-import { findSong, hrefSong } from '@/lib/preview/sample'
+import { hrefSong, uiData } from '@/lib/ui-data'
 
 // A 歌の画面（W2）。
 // ・この歌をつくった人：採用され、表示対象の Contribution だけから（えふさん確定 ①）
@@ -11,8 +11,8 @@ import { findSong, hrefSong } from '@/lib/preview/sample'
 // ・新しい Version として育てる：募集とは独立（④）
 // ・ありがとうを贈る：giftGate の1つの条件（Y4 暫定）。主ボタンはこの1つだけ。
 
-export default function SongPage({ params }: { params: { id: string } }) {
-  const song = findSong(params.id)
+export default async function SongPage({ params }: { params: { id: string } }) {
+  const song = await uiData().getSong(params.id)
   if (!song) notFound()
 
   const credits = creditsOf(song.contributions)

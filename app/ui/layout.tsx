@@ -3,7 +3,7 @@ import type { Metadata } from 'next'
 import { UtataneTheme } from '@/components/ui'
 import { AppShell } from '@/components/ui/AppShell'
 
-// 新しい画面（主要4導線と「自分」）。データは仮の形（lib/preview/sample.ts）。
+// 新しい画面（主要4導線と「自分」）。データは読み口（lib/ui-data）から来る。いまは見本の読み口。
 export const metadata: Metadata = {
   title: 'UTATANE',
   robots: { index: false, follow: false },

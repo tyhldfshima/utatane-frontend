@@ -3,7 +3,7 @@ import { notFound } from 'next/navigation'
 import { COPY, GhostButton, Icon, ScreenFrame, StateView } from '@/components/ui'
 import s from '@/components/ui/shell.module.css'
 import { joinRoleText, recruitmentText, resolveJoinRole } from '@/lib/preview/model'
-import { findSong, hrefSong, joinDraftFor } from '@/lib/preview/sample'
+import { hrefSong, uiData } from '@/lib/ui-data'
 
 // B この歌の制作に参加する（えふさん確定 ②③・2026-09-19 追補）。
 // 募集が複数：1 何で参加するか（募集されている役割から選ぶ。歌う人だけではない）→ 2 送る → 3 送りました
@@ -12,8 +12,8 @@ import { findSong, hrefSong, joinDraftFor } from '@/lib/preview/sample'
 
 type Search = { step?: string; role?: string }
 
-export default function JoinPage({ params, searchParams }: { params: { id: string }; searchParams: Search }) {
-  const song = findSong(params.id)
+export default async function JoinPage({ params, searchParams }: { params: { id: string }; searchParams: Search }) {
+  const song = await uiData().getSong(params.id)
   if (!song) notFound()
   const songBack = { href: hrefSong(song.id), label: '歌の画面へ' }
   const r = song.recruitment
@@ -24,7 +24,7 @@ export default function JoinPage({ params, searchParams }: { params: { id: strin
       </ScreenFrame>
     )
   }
-  const draft = joinDraftFor(song.id)
+  const draft = await uiData().getJoinDraftFor(song.id)
   const resolved = resolveJoinRole(r, searchParams.role)
   const role = resolved?.role ?? null
   const auto = resolved?.autoSelected ?? false

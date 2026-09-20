@@ -2,11 +2,11 @@ import React from 'react'
 import { notFound } from 'next/navigation'
 import { COPY, Icon, ScreenFrame, SecondaryButton } from '@/components/ui'
 import s from '@/components/ui/shell.module.css'
-import { findSong, hrefSong } from '@/lib/preview/sample'
+import { hrefSong, uiData } from '@/lib/ui-data'
 
 // W6 この歌が生まれた流れ（Version Tree）。上下・優劣を付けない。見られない歌は印だけ出し、線は消さない。
-export default function TreePage({ params }: { params: { id: string } }) {
-  const song = findSong(params.id)
+export default async function TreePage({ params }: { params: { id: string } }) {
+  const song = await uiData().getSong(params.id)
   if (!song) notFound()
   return (
     <ScreenFrame back={{ href: hrefSong(song.id), label: '歌の画面へ' }} title="この歌が生まれた流れ">

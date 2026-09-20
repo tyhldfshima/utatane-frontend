@@ -3,7 +3,7 @@ import { notFound } from 'next/navigation'
 import { COPY, GhostButton, Icon, ScreenFrame, StateView } from '@/components/ui'
 import s from '@/components/ui/shell.module.css'
 import { ADD_OPTIONS, NEW_WITHOUT_INHERIT_HREF, canProceedInherit, inheritCandidates, splitSelection } from '@/lib/preview/model'
-import { findSong, hrefSong } from '@/lib/preview/sample'
+import { hrefSong, uiData } from '@/lib/ui-data'
 import { InheritForm } from './InheritForm'
 
 // 新しい Version として育てる（えふさん確定 ④⑤⑥・2026-09-19 追補）。
@@ -16,8 +16,8 @@ type Search = { step?: string; take?: string | string[]; ask?: string }
 
 const list = (v: string | string[] | undefined) => (Array.isArray(v) ? v : (v ?? '').split(',')).filter(Boolean)
 
-export default function GrowPage({ params, searchParams }: { params: { id: string }; searchParams: Search }) {
-  const song = findSong(params.id)
+export default async function GrowPage({ params, searchParams }: { params: { id: string }; searchParams: Search }) {
+  const song = await uiData().getSong(params.id)
   if (!song) notFound()
   const base = `${hrefSong(song.id)}/grow`
   const candidates = inheritCandidates(song)
