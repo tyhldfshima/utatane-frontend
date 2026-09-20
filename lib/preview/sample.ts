@@ -8,11 +8,14 @@
 
 import { hrefSong } from './model'
 import type { SongView } from './model'
+import { INITIAL_PERMISSION_RULE } from '@/lib/domain/types'
 import type {
   Contribution,
   Derivation,
   Id,
   Material,
+  Permission,
+  PermissionRule,
   PublicationState,
   ReusePolicyVersion,
   RoleKind,
@@ -36,6 +39,20 @@ export type SampleSubmission = {
   roleKindId: Id
   holderIds: Id[]
   state: 'submitted' | 'not_adopted'
+}
+
+/**
+ * 主催が公開する前の下書き（G）。まだ公開していない Version を指す。
+ * ★③ 届け方は中央（Revenue Rule・受取人）の担当で lib/domain に判定が無いので、ここで持つ。
+ */
+export type SampleDraft = {
+  id: Id
+  versionId: Id
+  title: string
+  /** ③ 届け方が決まっているか */
+  deliveryReady: boolean
+  /** 公開した後に見に行く歌（見本）。無ければ null */
+  publishedSongId: Id | null
 }
 
 export type SampleSong = {
@@ -63,8 +80,14 @@ export type SampleData = {
   hiddenContributionIds: Id[]
   /** Version の公開状態。載っていない Version は 'public' */
   publicationStates: Record<Id, PublicationState>
+  /** 成立済みの許諾（使わせての承認） */
+  permissions: Permission[]
+  /** 許諾ルールの版 */
+  permissionRule: PermissionRule
   submissions: SampleSubmission[]
   songs: SampleSong[]
+  /** 主催が公開する前の下書き（G） */
+  publishDrafts: SampleDraft[]
 }
 
 // ── 人 ────────────────────────────────────────────────────
@@ -101,6 +124,7 @@ const T_MINATO = '2026-03-01T00:00:00Z'
 const T_FUTATABI = '2026-05-01T00:00:00Z'
 const T_FUTARI = '2026-06-01T00:00:00Z'
 const T_HIMITSU = '2026-07-01T00:00:00Z'
+const T_DRAFT = '2026-09-15T00:00:00Z'
 const NOW = '2026-09-20T00:00:00Z'
 
 // ── 貢献 ──────────────────────────────────────────────────
@@ -124,10 +148,34 @@ const CONTRIBUTIONS: Contribution[] = [
   c('c2-piano', 'piano', ['h-riku'], 'v-futatabi', T_FUTATABI),
   c('c3-arrange', 'arrangement', ['h-umi'], 'v-futari', T_FUTARI),
   c('c3-piano', 'piano', ['h-umi'], 'v-futari', T_FUTARI),
+  // 公開前の下書き「雨のあとで」（主催＝うみ）
+  c('c5-melody', 'melody', ['h-umi'], 'v-ame', T_DRAFT),
+  c('c5-vocal', 'vocal', ['h-sora'], 'v-ame', T_DRAFT),
+  // 公開前の下書き「晴れの日に」（主催＝うみ）
+  c('c6-melody', 'melody', ['h-umi'], 'v-hare', T_DRAFT),
+  c('c6-vocal', 'vocal', ['h-sora'], 'v-hare', T_DRAFT),
 ]
 
 /** 由来（子 → 親）。「港の灯り」の歌詞は「夜明けのうた」の歌詞を元にしている */
 const DERIVATIONS: Derivation[] = [{ childId: 'c-lyrics', parentId: 'c4-lyrics', kind: 'modified_from' }]
+
+// ── 素材 ──────────────────────────────────────────────────
+// ★出どころの申告が無い素材は、公開の再検証で止まる（checkMaterials）。
+
+const MATERIALS: Material[] = [
+  {
+    id: 'm-ame',
+    storageFileId: 'f-ame',
+    embodiedContributionIds: ['c5-melody', 'c5-vocal'],
+    provenance: { kind: 'self_made', declaredBy: 'h-umi', declaredAt: T_DRAFT },
+  },
+  {
+    id: 'm-hare',
+    storageFileId: 'f-hare',
+    embodiedContributionIds: ['c6-melody', 'c6-vocal'],
+    provenance: { kind: 'self_made', declaredBy: 'h-umi', declaredAt: T_DRAFT },
+  },
+]
 
 // ── Version ───────────────────────────────────────────────
 
@@ -174,6 +222,32 @@ const VERSIONS: Version[] = [
     ],
     materialIds: [],
   },
+  // 公開前の下書き（G 主催が公開する前の確認）。みなとさんの許諾がまだ＝公開に進めない
+  {
+    id: 'v-ame',
+    hostHolderId: 'h-umi',
+    publishedAt: null,
+    contributions: [
+      { contributionId: 'c5-melody', relation: 'created' },
+      { contributionId: 'c5-vocal', relation: 'created' },
+      { contributionId: 'c-lyrics', relation: 'referenced' },
+      { contributionId: 'c-vocal', relation: 'referenced' },
+    ],
+    materialIds: ['m-ame'],
+  },
+  // 公開前の下書き。みなとさんの許諾が成立済み＝公開に進める
+  {
+    id: 'v-hare',
+    hostHolderId: 'h-umi',
+    publishedAt: null,
+    contributions: [
+      { contributionId: 'c6-melody', relation: 'created' },
+      { contributionId: 'c6-vocal', relation: 'created' },
+      { contributionId: 'c-lyrics', relation: 'referenced' },
+      { contributionId: 'c-vocal', relation: 'referenced' },
+    ],
+    materialIds: ['m-hare'],
+  },
   // 「港の灯り」から生まれたが、いまは見られない歌（公開状態が private）
   {
     id: 'v-himitsu',
@@ -207,6 +281,34 @@ const REUSE_POLICIES: ReusePolicyVersion[] = [
   policy('c2-piano', 'free', 'any_version', T_FUTATABI),
   policy('c3-arrange', 'free', 'any_version', T_FUTARI),
   // c3-piano は設定が無い＝初期値（申請→承認・DEFAULT_REUSE_MODE）が効く
+  policy('c5-melody', 'approval', 'any_version', T_DRAFT),
+  policy('c5-vocal', 'free', 'any_version', T_DRAFT),
+  policy('c6-melody', 'approval', 'any_version', T_DRAFT),
+  policy('c6-vocal', 'free', 'any_version', T_DRAFT),
+]
+
+// ── 成立済みの許諾（使わせての承認） ───────────────────────────
+// ★「晴れの日に」だけ、みなとさんの承認が成立している。「雨のあとで」には無い。
+
+const PERMISSIONS: Permission[] = [
+  {
+    id: 'p-hare-vocal',
+    contributionId: 'c-vocal',
+    granteeHolderId: 'h-umi',
+    draftVersionId: 'v-hare',
+    basis: 'request_approval',
+    grantorHolderIds: ['h-minato'],
+    policyVersionNoAtGrant: 1,
+    permissionRuleVersionAtGrant: INITIAL_PERMISSION_RULE.version,
+    events: [{ kind: 'granted', actorHolderId: 'h-minato', at: T_DRAFT }],
+  },
+]
+
+// ── 公開前の下書き（G） ────────────────────────────────────
+
+const PUBLISH_DRAFTS: SampleDraft[] = [
+  { id: 'ame', versionId: 'v-ame', title: '雨のあとで', deliveryReady: true, publishedSongId: null },
+  { id: 'hare', versionId: 'v-hare', title: '晴れの日に', deliveryReady: true, publishedSongId: 'hare' },
 ]
 
 // ── 送り物（採用前） ───────────────────────────────────────
@@ -251,6 +353,15 @@ const SONG_LIST: SampleSong[] = [
     recruitmentRoleKindIds: null,
     gift: noGiftIssue,
   },
+  // 公開前の下書き「晴れの日に」。公開の画面の［公開した歌を見る］の行き先（見本）
+  {
+    id: 'hare',
+    versionId: 'v-hare',
+    title: '晴れの日に',
+    about: '雨のあとの、晴れた日の歌です。',
+    recruitmentRoleKindIds: null,
+    gift: { ...noGiftIssue, receivableCount: 3 },
+  },
   {
     id: 'yoake',
     versionId: 'v-yoake',
@@ -270,13 +381,16 @@ export const SAMPLE: SampleData = {
   roleKinds: ROLE_KINDS,
   contributions: CONTRIBUTIONS,
   derivations: DERIVATIONS,
-  materials: [],
+  materials: MATERIALS,
   versions: VERSIONS,
   reusePolicies: REUSE_POLICIES,
+  permissions: PERMISSIONS,
+  permissionRule: INITIAL_PERMISSION_RULE,
   hiddenContributionIds: [],
   publicationStates: { 'v-himitsu': 'private' },
   submissions: SUBMISSIONS,
   songs: SONG_LIST,
+  publishDrafts: PUBLISH_DRAFTS,
 }
 
 // ── 画面の読み口（lib/ui-data）に渡す見本（決まりの外の物） ─────────

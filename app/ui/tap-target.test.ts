@@ -11,6 +11,7 @@ import ThanksPage from './songs/[id]/thanks/page'
 import TreePage from './songs/[id]/tree/page'
 import DraftPage from './drafts/[id]/page'
 import ConsentPage from './inbox/consent/[id]/page'
+import PublishPage from './drafts/[id]/publish/page'
 import InboxPage from './inbox/page'
 import MePage from './me/page'
 import ProfilePage from './me/profile/page'
@@ -170,6 +171,11 @@ const SCREENS: { name: string; html: () => Promise<string> }[] = [
   { name: '参加者の同意（小窓）', html: () => render(ConsentPage, { params: { id: 'ame' }, searchParams: { confirm: '1' } }) },
   { name: '参加者の同意（完了）', html: () => render(ConsentPage, { params: { id: 'ame' }, searchParams: { done: '1' } }) },
   { name: '参加者の同意（エラー）', html: () => render(ConsentPage, { params: { id: 'ame' }, searchParams: { state: 'error' } }) },
+  { name: '主催が公開する（同意を待っている）', html: () => render(PublishPage, song('ame')) },
+  { name: '主催が公開する（同意がそろった）', html: () => render(PublishPage, song('hare')) },
+  { name: '主催が公開する（小窓）', html: () => render(PublishPage, { params: { id: 'hare' }, searchParams: { confirm: '1' } }) },
+  { name: '主催が公開する（エラー）', html: () => render(PublishPage, { params: { id: 'hare' }, searchParams: { state: 'error' } }) },
+  { name: '主催が公開する（完了）', html: () => render(PublishPage, { params: { id: 'hare' }, searchParams: { done: '1' } }) },
 ]
 
 describe('押せる物は 44px 以上（設計書 §2-1）', () => {

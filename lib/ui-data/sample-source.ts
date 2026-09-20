@@ -11,7 +11,8 @@
 
 import { effectiveMode, policyFor } from '@/lib/domain/permissions'
 import { requiredContributionsOf, traceVersionLineage } from '@/lib/domain/lineage'
-import type { Contribution, Id, Material, ReuseMode, Version } from '@/lib/domain/types'
+import { checkMaterials, revalidateForPublish } from '@/lib/domain/publish'
+import type { CoauthorApprovalMethod, Contribution, Id, Material, ReuseMode, Version } from '@/lib/domain/types'
 import { creditsOf, inheritCandidates, recruitmentText } from '@/lib/preview/model'
 import type { ContributionView, CreditLine, InheritCandidate, PersonRef, SongView } from '@/lib/preview/model'
 import {
@@ -36,6 +37,9 @@ import type {
   InboxGroup,
   MeView,
   PublicProfileView,
+  PublishConsentLine,
+  PublishStep,
+  PublishView,
   UiDataSource,
 } from './port'
 
@@ -151,7 +155,8 @@ export function createSampleSource(data: SampleData): UiDataSource {
   /** この歌から生まれた歌＝ほかの Version の由来に、この Version で生まれた貢献が出てくる物 */
   const childrenOf = (version: Version): SongView['children'] =>
     data.versions
-      .filter((v) => v.id !== version.id)
+      // ★公開前の下書きは、まだ「生まれた歌」ではない
+      .filter((v) => v.id !== version.id && v.publishedAt !== null)
       .map((v) => {
         const taken = traceVersionLineage(v, materials, data.derivations)
           .map((e) => contributions.get(e.contributionId))
@@ -212,6 +217,97 @@ export function createSampleSource(data: SampleData): UiDataSource {
   const songOf = (songId: Id): SongView | null => {
     if (!cache.has(songId)) cache.set(songId, buildSong(songId))
     return cache.get(songId) ?? null
+  }
+
+  // ── 主催が公開する前の確認（G） ────────────────────────
+  // ★止まる理由も、ステップの「済」も、正本の関数（revalidateForPublish・checkMaterials・
+  //   evaluateCoauthorConsent）の結果から出す。画面に固定で書かない。
+
+  const STEP_MATERIALS = '④ 素材と元の歌'
+
+  const buildPublish = (draftId: Id): PublishView | null => {
+    const draft = data.publishDrafts.find((d) => d.id === draftId)
+    if (!draft) return null
+    const version = versions.get(draft.versionId)
+    if (!version || version.publishedAt !== null) return null
+
+    const check = revalidateForPublish(
+      version,
+      {
+        contributions,
+        materials,
+        policies: data.reusePolicies,
+        permissions: data.permissions,
+        coauthorMethods: new Map<Id, CoauthorApprovalMethod>(),
+        rule: data.permissionRule,
+      },
+      data.now,
+    )
+    const materialIssues = checkMaterials(version, materials)
+
+    // ⑥ 必要な同意（主催は自分の分なので並べない）。1つでも足りない物があれば「まだ」
+    const lines = new Map<Id, PublishConsentLine>()
+    for (const item of check.items) {
+      const c = contributions.get(item.contributionId)
+      if (!c) continue
+      for (const holder of c.holderIds) {
+        if (holder === version.hostHolderId) continue
+        const done = !item.missingHolderIds.includes(holder)
+        const before = lines.get(holder)
+        if (before) before.done = before.done && done
+        else lines.set(holder, { holderId: holder, name: personOf(holder).displayName, done })
+      }
+    }
+
+    // 止まる理由（設計書の文言）
+    const reasons: string[] = []
+    if (materialIssues.length > 0) reasons.push(`${STEP_MATERIALS} がまだ済んでいません。`)
+    for (const item of check.items) {
+      if (item.ok) continue
+      const c = contributions.get(item.contributionId)
+      if (!c) continue
+      const asset = roleOf(c.roleKindId).assetLabel
+      for (const holder of item.missingHolderIds) {
+        const name = personOf(holder).displayName
+        const line =
+          item.reason === 'policy_forbidden'
+            ? `${name}さんの${asset}は利用できません。`
+            : `${name}さんの同意を待っています。`
+        if (!reasons.includes(line)) reasons.push(line)
+      }
+    }
+
+    const createdHere = version.contributions
+      .filter((vc) => vc.relation === 'created')
+      .map((vc) => vc.contributionId)
+    const steps: PublishStep[] = [
+      { key: 'sound', label: '① 音', done: version.materialIds.length > 0 },
+      { key: 'credits', label: '② クレジット', done: creditsOf(adoptedOf(version)).length > 0 },
+      // ★③ 届け方は中央（Revenue Rule・受取人）の担当で、lib/domain に判定が無い
+      { key: 'delivery', label: '③ 届け方', done: draft.deliveryReady },
+      { key: 'materials', label: STEP_MATERIALS, done: materialIssues.length === 0 },
+      {
+        key: 'reuse',
+        label: '⑤ 使ってもらう時の希望',
+        done: createdHere.every((cid) =>
+          (contributions.get(cid)?.holderIds ?? []).every(
+            (h) => policyFor(data.reusePolicies, cid, h, data.now) !== null,
+          ),
+        ),
+      },
+      { key: 'publish', label: '⑥ 同意と公開', done: false },
+    ]
+
+    return {
+      draftId: draft.id,
+      title: draft.title,
+      hostName: personOf(version.hostHolderId).displayName,
+      steps,
+      consents: Array.from(lines.values()),
+      ready: check.passed,
+      blockedReasons: reasons,
+      publishedSongId: draft.publishedSongId,
+    }
   }
 
   /** 「参加できる歌」の段だけ、募集中の役割を2段目に出す */
@@ -317,6 +413,10 @@ export function createSampleSource(data: SampleData): UiDataSource {
 
     async listCreateOptions(): Promise<CreateOption[]> {
       return CREATE_OPTIONS.map((o) => ({ ...o }))
+    },
+
+    async getPublish(draftId: string): Promise<PublishView | null> {
+      return buildPublish(draftId)
     },
   }
 }

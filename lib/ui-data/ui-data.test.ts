@@ -137,6 +137,9 @@ describe('差し替え（画面を1枚も書き直さずに、中身が変わる
     async listCreateOptions() {
       return [{ id: 'only', label: 'ためしの始め方', icon: 'plus', href: null, reason: 'ためし' }]
     },
+    async getPublish() {
+      return null
+    },
   }
 
   it('ホーム・歌・自分・＋つくる・対応待ちが、差し替えた読み口の中身になる', async () => {
