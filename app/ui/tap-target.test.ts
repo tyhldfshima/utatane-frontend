@@ -183,6 +183,9 @@ const SCREENS: { name: string; html: () => Promise<string> }[] = [
   { name: '主催が公開する（素材がまだ）', html: () => render(PublishPage, song('hoshi')) },
   { name: '素材と元の歌（一覧）', html: () => render(DraftMaterialsPage, song('hoshi')) },
   { name: '素材の出どころを申告する', html: () => render(DraftMaterialsPage, { params: { id: 'hoshi' }, searchParams: { material: 'm-hoshi' } }) },
+  { name: 'ありがとう（上限で止まる）', html: () => render(ThanksPage, { params: { id: 'minato' }, searchParams: { amount: '500' } }) },
+  { name: 'ありがとう（贈る前に止まった）', html: () => render(ThanksPage, { params: { id: 'minato' }, searchParams: { step: 'confirm', amount: '300', state: 'error' } }) },
+  { name: 'ありがとう（いま止まっている）', html: () => render(ThanksPage, { params: { id: 'minato' }, searchParams: { step: 'result', amount: '300', r: 'paused' } }) },
 ]
 
 describe('押せる物は 44px 以上（設計書 §2-1）', () => {
@@ -196,6 +199,15 @@ describe('押せる物は 44px 以上（設計書 §2-1）', () => {
     const logos = tapTargets(html).filter((t) => t.text === 'UTATANE')
     expect(logos.length).toBeGreaterThanOrEqual(2) // 上の帯（スマホ）と左の縦メニュー（PC）
     for (const t of logos) expect(heightOf(t), t.text).toBeGreaterThanOrEqual(SIZES.minTouch)
+  })
+
+  it('「贈っています」は、押せる物が1つも無い（二重に贈らせない）', async () => {
+    const html = await render(ThanksPage, {
+      params: { id: 'minato' },
+      searchParams: { step: 'confirm', amount: '300', state: 'sending' },
+    })
+    expect(html).toContain('data-ui="busy"')
+    expect(tapTargets(html)).toEqual([])
   })
 
   it('画面の枠（下のタブ・再生バー・上の帯）の押せる物が、すべて 44px 以上', () => {

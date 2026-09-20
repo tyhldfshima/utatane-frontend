@@ -4,6 +4,7 @@ import { COPY, GhostButton, Icon, ScreenFrame, StateView } from '@/components/ui
 import s from '@/components/ui/shell.module.css'
 import { joinRoleText, recruitmentText, resolveJoinRole } from '@/lib/preview/model'
 import { hrefSong, uiData } from '@/lib/ui-data'
+import { SubmitForm } from './SubmitForm'
 
 // B この歌の制作に参加する（えふさん確定 ②③・2026-09-19 追補）。
 // 募集が複数：1 何で参加するか（募集されている役割から選ぶ。歌う人だけではない）→ 2 送る → 3 送りました
@@ -117,41 +118,21 @@ export default async function JoinPage({ params, searchParams }: { params: { id:
       )
     }
 
+    // ★送る物は、自分が置いた素材（§3 K）から選ぶ。選ぶまで送れない
+    const materials = await uiData().listMyMaterials()
     return (
-      <ScreenFrame
+      <SubmitForm
+        action={base}
+        roleLabel={role.roleLabel}
+        roleKindId={role.roleKindId}
+        auto={auto}
+        hostName={r.hostName}
+        draft={auto && draft ? { title: draft.title, titleNote: draft.titleNote } : null}
         // 募集が1つのときは選ぶ画面が無いので、戻る先は歌の画面
         back={submitBack}
-        title={auto ? COPY.joinTitle : `${role.roleLabel}を送る`}
-        primary={{ kind: 'action', label: `${role.roleLabel}を送る`, icon: 'send', href: `${base}?step=sent${roleQuery}` }}
-        secondary={<GhostButton label={COPY.cancel} href={hrefSong(song.id)} />}
-      >
-        <div data-screen="join-submit" data-auto-role={auto ? 'true' : 'false'}>
-          {steps}
-          {roleMark}
-          {auto ? (
-            <p>
-              {r.hostName}さんの制作に加わります。いま募集しているのは「{role.roleLabel}」なので、{joinRoleText(role.roleLabel)}します。
-            </p>
-          ) : null}
-          {auto && draft ? (
-            <dl className={s.kv}>
-              <dt>制作の題名</dt>
-              <dd>
-                {draft.title}
-                <br />
-                <span className={s.sub} style={{ fontWeight: 400 }}>
-                  {draft.titleNote}
-                </span>
-              </dd>
-            </dl>
-          ) : null}
-          <div className={s.card} role="note">
-            <b>送る物（仮の形）</b>
-            <p className={s.sub}>見本のファイル「{role.roleLabel}_1」。ファイルを選ぶ所は、保存の場所とつなぐ便で作ります。</p>
-          </div>
-          <p>送った物は、主催が入れると、この歌の制作に入ります。</p>
-        </div>
-      </ScreenFrame>
+        cancelHref={hrefSong(song.id)}
+        materials={materials}
+      />
     )
   }
 

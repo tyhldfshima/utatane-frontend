@@ -107,6 +107,11 @@ export type GiftSettings = {
   balance: number
   /** 残高の古さ（「13時05分 時点」の中身） */
   balanceAtLabel: string
+  /**
+   * 1回に贈れる上限。中央の制度の設定から来る（設計書 §4）。
+   * ★その口はまだ無いので、見本の読み口では見本の値を返す
+   */
+  perGiftLimit: number
 }
 
 // ── 主催が公開する前の確認（G） ────────────────────────────
@@ -175,6 +180,18 @@ export type DeclareProvenanceInput = {
   kind: string
   /** 「UTATANE 内の素材から」のときの元の素材 */
   sourceMaterialId?: Id
+}
+
+// ── 自分が置いた素材（K 自分の素材・参加の「送る」で選ぶ） ────────
+
+export type MyMaterialView = {
+  id: Id
+  /** ファイル名 */
+  label: string
+  /** 大きさ */
+  sizeLabel: string
+  /** 置いた日 */
+  placedAtLabel: string
 }
 
 // ── 使わせてとお願いする（J の「承認が必要」） ────────────────
@@ -271,6 +288,9 @@ export interface UiDataSource {
    * 使わせてとお願いする（J）。選んだ物のうち「承認が必要」な物だけを返す。
    * 「承認が必要」かは lib/domain の effectiveMode の結果から決まる。歌が無ければ null
    */
+  /** 自分が置いた素材。参加の「送る」で選ぶ物。無ければ空の配列 */
+  listMyMaterials(): Promise<MyMaterialView[]>
+
   getPermissionAsk(songId: Id, selectedIds: Id[]): Promise<PermissionAskView | null>
 
   /**
