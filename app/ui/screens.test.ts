@@ -186,11 +186,13 @@ describe('生まれた流れ・自分・ホーム', () => {
     expect(html).toContain('/ui/songs/minato/grow')
     expect(html).toContain('いまは見られない歌')
   })
-  it('自分は管理画面が先で、公開プロフィールへ進める。TYP の残高・入口は置かない', async () => {
+  it('自分は管理画面が先で、公開プロフィールへ進める。★TYP の残高と入口は置かない', async () => {
     const html = await render(MePage)
     expect(html).toContain('/ui/me/profile')
-    expect(html).not.toContain('TYP')
-    expect(html).not.toContain('TYポイント')
+    // ★決まり（941be1bd）は「残高と入口を置かない」。★数字と操作を置かないことで見る。
+    //   （寄せる設計 §3 設計②で「TYポイントで残高と履歴を見る」の1行だけは置く）
+    expect(html).not.toMatch(/[\d,]+\s*TYP/)
+    for (const entry of ['贈る', '換金', '寄付', '残高を見る']) expect(html).not.toContain(entry)
   })
   it('ホームの段の見出しは線のアイコン（絵文字を使わない）', async () => {
     const html = await render(HomePage)
