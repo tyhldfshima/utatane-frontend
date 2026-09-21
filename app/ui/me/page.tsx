@@ -1,10 +1,14 @@
 import React from 'react'
-import { Icon, SecondaryButton } from '@/components/ui'
+import { COPY, Icon, SecondaryButton } from '@/components/ui'
 import s from '@/components/ui/shell.module.css'
 import { hrefSong, uiData } from '@/lib/ui-data'
 
+/** ★TYポイントの画面（H・担当外）。残高と履歴はここでは出さず、行き方だけを置く。 */
+const TYP_HREF = 'https://point.ty-hld.com/'
+
 // 自分（えふさん確定：最初に自分用の管理画面、そこから公開プロフィールへ）。
-// ★TYポイント・TYP の残高と入口は置かない（941be1bd）。
+// ★TYポイントの残高と履歴は、ここに置かない（941be1bd）。置くのは行き方の1行だけ
+//   （寄せる設計 §3 設計②）。★数字は1つも出さない。読むのは point.ty-hld.com の画面（H・担当外）。
 // 中身は読み口から来る（lib/ui-data）。
 export default async function MePage() {
   const me = await uiData().getMe()
@@ -30,6 +34,18 @@ export default async function MePage() {
           <span className={s.sub}>置いた音のファイル（あなただけが見られます）</span>
         </span>
         <Icon name="right" size="s" />
+      </a>
+      {/* ★TYポイントへの行き方（寄せる設計 §3 設計②）。
+          残高も履歴もここでは出さない。読むのは TYポイント側の画面（H・担当外）。 */}
+      <a className={s.row} href={TYP_HREF} data-link="typ">
+        <span className={s.jacket}>
+          <Icon name="point" />
+        </span>
+        <span className={s.rowText}>
+          <b>{COPY.typLink}</b>
+          <span className={s.sub}>{COPY.typLinkNote}</span>
+        </span>
+        <Icon name="external" size="s" />
       </a>
 
       <h2 className={s.section}>
