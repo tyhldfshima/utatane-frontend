@@ -2,6 +2,7 @@ import React from 'react'
 import { notFound } from 'next/navigation'
 import { COPY, GhostButton, Icon, ScreenFrame, StateView } from '@/components/ui'
 import s from '@/components/ui/shell.module.css'
+import { measure } from '@/lib/measure'
 import { joinRoleText, recruitmentText, resolveJoinRole } from '@/lib/preview/model'
 import { hrefSong, uiData } from '@/lib/ui-data'
 import { SubmitForm } from './SubmitForm'
@@ -118,6 +119,10 @@ export default async function JoinPage({ params, searchParams }: { params: { id:
       )
     }
 
+    // ★計測の操作点 M-2（参加）：役割が決まり、参加の申し込みに入った時点（正本 §4）。
+    //   送り口は何もしない形（lib/measure）。見た目も動きも変わらない。
+    measure().mark('M-2')
+
     // ★送る物は、自分が置いた素材（§3 K）から選ぶ。選ぶまで送れない
     const materials = await uiData().listMyMaterials()
     return (
@@ -135,6 +140,10 @@ export default async function JoinPage({ params, searchParams }: { params: { id:
       />
     )
   }
+
+  // ★計測の操作点 M-3（Contribution）：送った時点（正本 §4）。
+  //   ★まだこの歌には入っていない（主催が入れると Contribution になる＝M-4）。
+  measure().mark('M-3')
 
   return (
     <ScreenFrame
