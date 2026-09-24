@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation'
 import { GhostButton, Icon, ScreenFrame, UnavailableButton } from '@/components/ui'
 import s from '@/components/ui/shell.module.css'
 import { ADD_OPTIONS, NEW_WITHOUT_INHERIT_HREF, joinRoleText, splitSelection } from '@/lib/preview/model'
+import { measure } from '@/lib/measure'
 import { hrefSong, uiData, type SongView } from '@/lib/ui-data'
 
 // W4 制作中の歌。
@@ -76,6 +77,10 @@ function GrownDraft({ from, searchParams }: { from: SongView; searchParams: Sear
       </ScreenFrame>
     )
   }
+  // ★計測の操作点 M-8（次の創作）：元の歌から受け継いだ新しい Version の下書きができた時点（正本 §4）。
+  //   受け継ぐ物が0件のとき（上で返す）は Version の派生ではないので鳴らさない。
+  measure().mark('M-8')
+
   const nameOf = (id: string) => cands.find((c) => c.id === id)?.label ?? null
   return (
     <ScreenFrame

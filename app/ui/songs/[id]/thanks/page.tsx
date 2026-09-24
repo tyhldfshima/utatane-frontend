@@ -2,6 +2,7 @@ import React from 'react'
 import { notFound } from 'next/navigation'
 import { COPY, GhostButton, Icon, ScreenFrame, StateView, giftGate } from '@/components/ui'
 import s from '@/components/ui/shell.module.css'
+import { measure } from '@/lib/measure'
 import { hrefSong, uiData } from '@/lib/ui-data'
 
 // ② ありがとうを贈る（C 量を選ぶ → D 贈る前の確認 → E 結果）。UTATANE のシート。
@@ -170,6 +171,9 @@ export default async function ThanksPage({ params, searchParams }: { params: { i
 
   // 結果（仮の形：答えは見本。?r=checking・failed で他の結果の見本）
   const r = searchParams.r
+  // ★計測の操作点 M-7（TYP）：ありがとうが届いた時点（正本 §4）。
+  //   届かなかったとき（failed・paused）と、結果が分からないとき（checking）は鳴らさない。
+  if (!r) measure().mark('M-7')
   return (
     <Sheet title={song.title}>
       <ScreenFrame presentation="sheet" primary={{ kind: 'action', label: COPY.close, href: songHref }}>

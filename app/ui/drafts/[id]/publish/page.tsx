@@ -2,6 +2,7 @@ import React from 'react'
 import { notFound } from 'next/navigation'
 import { COPY, ConfirmDialog, Icon, ScreenFrame, SecondaryButton, StateView, UnavailableButton, type PrimarySlot } from '@/components/ui'
 import s from '@/components/ui/shell.module.css'
+import { measure } from '@/lib/measure'
 import { hrefSong, uiData } from '@/lib/ui-data'
 
 // G 公開する前の確認（主催が公開する）。設計書 utatane-focus-screens-spec.md:196-208・試作 g-normal〜g-done。
@@ -29,6 +30,9 @@ export default async function PublishPage({ params, searchParams }: { params: { 
   // G 完了（設計書 §3 G「公開しました」「誰でも聴けるようになりました。」）
   // ★同意がそろっていないのに住所で直接開いても、完了にはしない
   if (searchParams.done === '1' && v.ready) {
+    // ★計測の操作点 M-6（公開）：公開が済んだ時点（正本 §4）。
+    //   同意がそろっていないのに住所で直接開いた時（上の条件が false）は鳴らさない。
+    measure().mark('M-6')
     const primary: PrimarySlot | undefined = v.publishedSongId
       ? { kind: 'action', label: COPY.publishDoneButton, icon: 'right', href: hrefSong(v.publishedSongId) }
       : undefined
