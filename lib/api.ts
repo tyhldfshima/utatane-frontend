@@ -1,6 +1,8 @@
 ﻿// lib/api.ts 窶・繧ｦ繧ｿ繧ｿ繝・API 繧ｯ繝ｩ繧､繧｢繝ｳ繝・
 // 繝舌ャ繧ｯ繧ｨ繝ｳ繝・(utatane-backend) 縺ｮ蜈ｨ繧ｨ繝ｳ繝峨・繧､繝ｳ繝医↓蟇ｾ蠢・
 
+import { currentAccessToken } from '@/stores/authStore'
+
 // API の接続先はここ1か所だけで決める（中央の API ができたら NEXT_PUBLIC_API_URL を付け替える）。
 // 未設定のときは既定の住所へ落とさず、呼ばずに api_url_not_configured で失敗させる。
 const BASE = process.env.NEXT_PUBLIC_API_URL ?? ''
@@ -21,8 +23,8 @@ export class ApiError extends Error {
 // 笏笏 繝ｪ繧ｯ繧ｨ繧ｹ繝亥・騾壼・逅・笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏笏
 
 async function req<T>(path: string, init: RequestInit = {}): Promise<T> {
-  const token = typeof window !== 'undefined'
-    ? localStorage.getItem('access_token') : null
+  // トークンは保存しない。毎回、中央ログイン（@tyhld/auth）のセッションから読む（D-4）
+  const token = typeof window !== 'undefined' ? await currentAccessToken() : null
 
   const res = await fetch(apiUrl(path), {
     ...init,
@@ -34,8 +36,7 @@ async function req<T>(path: string, init: RequestInit = {}): Promise<T> {
   })
 
   if (res.status === 401) {
-    const ok = await tryRefresh()
-    if (ok) return req<T>(path, init)
+    // トークンの更新は @tyhld/auth（@supabase/ssr）が行う。ここで自前の更新はしない
     if (typeof window !== 'undefined') window.location.href = '/login'
     throw new ApiError(401, 'unauthorized')
   }
@@ -43,23 +44,6 @@ async function req<T>(path: string, init: RequestInit = {}): Promise<T> {
   const data = await res.json().catch(() => ({}))
   if (!res.ok) throw new ApiError(res.status, data.error ?? 'unknown_error')
   return data as T
-}
-
-async function tryRefresh(): Promise<boolean> {
-  const refresh = typeof window !== 'undefined'
-    ? localStorage.getItem('refresh_token') : null
-  if (!refresh) return false
-  try {
-    const res = await fetch(apiUrl('/api/v1/auth/refresh'), {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ refresh_token: refresh }),
-    })
-    if (!res.ok) return false
-    const { access_token } = await res.json()
-    localStorage.setItem('access_token', access_token)
-    return true
-  } catch { return false }
 }
 
 const post = <T>(path: string, body?: unknown) =>
@@ -164,13 +148,7 @@ export interface VersionContributorInput {
 
 export const api = {
   // 隱崎ｨｼ
-  register: (name: string, email: string, password: string) =>
-    post<{ access_token: string; refresh_token: string; user: User }>(
-      '/api/v1/auth/register', { name, email, password }),
-  login: (email: string, password: string) =>
-    post<{ access_token: string; refresh_token: string; user: User }>(
-      '/api/v1/auth/login', { email, password }),
-  logout: () => post<{ ok: boolean }>('/api/v1/auth/logout'),
+  // メールとパスワードのログイン（register・login・logout）は外した。ログインは中央の TY アカウント（stores/authStore.ts）
 
   // 繝ｦ繝ｼ繧ｶ繝ｼ
   getMe: () => req<User>('/api/v1/users/me'),
